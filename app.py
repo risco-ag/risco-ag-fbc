@@ -12,10 +12,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização CSS para ajustar contraste e legibilidade
+# Estilização CSS completa
 st.markdown("""
     <style>
-    /* Fundo da aplicação */
+    /* Fundo geral da aplicação */
     .stApp {
         background-color: #0f172a;
         color: #f8fafc;
@@ -26,12 +26,38 @@ st.markdown("""
         color: #f8fafc !important;
     }
     
-    /* Ajuste de contraste para a Barra Lateral (Sidebar) */
+    /* Ajuste de contraste da Barra Lateral (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #1e293b;
     }
     [data-testid="stSidebar"] * {
         color: #f8fafc !important;
+    }
+    
+    /* Componente File Uploader */
+    [data-testid="stFileUploaderDropzone"] {
+        background-color: #1e293b !important;
+        border: 2px dashed #475569 !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Botão 'Browse files' */
+    [data-testid="stFileUploaderDropzone"] button {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+        border: 1px solid #64748b !important;
+        border-radius: 6px !important;
+    }
+    [data-testid="stFileUploaderDropzone"] button:hover {
+        background-color: #475569 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Textos do Uploader */
+    [data-testid="stFileUploaderDropzone"] span, 
+    [data-testid="stFileUploaderDropzone"] small,
+    [data-testid="stFileUploaderFileData"] {
+        color: #cbd5e1 !important;
     }
     
     /* Botão de Ação Principal */
@@ -43,6 +69,7 @@ st.markdown("""
         border: none !important;
         padding: 0.6rem 1.2rem !important;
         width: 100% !important;
+        font-size: 1.05rem !important;
     }
     .stButton>button:hover {
         background-color: #34d399 !important;
@@ -73,7 +100,7 @@ st.sidebar.info("""
 - Avaliação de Vulnerabilidade de Defesa
 """)
 
-# Cabeçalho Ajustado (Sem o ícone da balança e sem "DECISION ENGINE — ")
+# Cabeçalho
 st.title("RISCO AG / FBC")
 st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
 
@@ -86,7 +113,7 @@ with col_left:
     st.subheader("Envio do Processo")
     uploaded_file = st.file_uploader("Arraste ou selecione o PDF integral dos autos:", type=["pdf"])
     
-    btn_processar = st.button("🚀 Iniciar Auditoria Processual", disabled=(uploaded_file is None))
+    btn_processar = st.button("Gerar Rating e Diagnóstico", disabled=(uploaded_file is None))
 
 SYSTEM_INSTRUCTION = """
 Você é um Auditor Jurídico de Elite especializado em Execuções de Agronegócio, Risco de Crédito e Contragarantias. Sua função é processar a íntegra dos autos de um processo judicial, realizar a varredura cronológica completa de todas as peças e emitir um Diagnóstico de Risco com Precisão Cirúrgica.
