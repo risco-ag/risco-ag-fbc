@@ -15,38 +15,27 @@ st.set_page_config(
 # Estilização CSS completa
 st.markdown("""
     <style>
-    /* Ajuste de espaçamento superior para não cortar o título */
     .block-container {
         padding-top: 2rem !important;
     }
-    
-    /* Fundo geral da aplicação */
     .stApp {
         background-color: #0f172a;
         color: #f8fafc;
     }
-    
-    /* Textos principais e cabeçalhos */
     h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
-    
-    /* Ajuste de contraste da Barra Lateral (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #1e293b;
     }
     [data-testid="stSidebar"] * {
         color: #f8fafc !important;
     }
-    
-    /* Componente File Uploader */
     [data-testid="stFileUploaderDropzone"] {
         background-color: #1e293b !important;
         border: 2px dashed #475569 !important;
         border-radius: 8px !important;
     }
-    
-    /* Botão 'Browse files' */
     [data-testid="stFileUploaderDropzone"] button {
         background-color: #334155 !important;
         color: #ffffff !important;
@@ -57,15 +46,11 @@ st.markdown("""
         background-color: #475569 !important;
         color: #ffffff !important;
     }
-    
-    /* Textos do Uploader */
     [data-testid="stFileUploaderDropzone"] span, 
     [data-testid="stFileUploaderDropzone"] small,
     [data-testid="stFileUploaderFileData"] {
         color: #cbd5e1 !important;
     }
-    
-    /* Botão de Ação Principal */
     .stButton>button {
         background-color: #10b981 !important;
         color: #0f172a !important;
@@ -80,8 +65,6 @@ st.markdown("""
         background-color: #34d399 !important;
         color: #0f172a !important;
     }
-    
-    /* Caixas de Alerta/Informação */
     .stAlert {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
@@ -89,12 +72,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar - Configuração da API Key
-st.sidebar.title("⚙️ Configurações do Sistema")
-api_key_input = st.sidebar.text_input(
-    "Cole sua Gemini API Key:", 
-    type="password"
-)
+# Lógica para obter a API Key automaticamente dos Secrets do Streamlit
+api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+
+# Sidebar Informativa (Sem caixa de texto para senha)
+st.sidebar.title("⚙️ Painel do Sistema")
+st.sidebar.success("Autenticação Gemini API: Ativa")
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
@@ -105,7 +88,7 @@ st.sidebar.info("""
 - Avaliação de Vulnerabilidade de Defesa
 """)
 
-# Cabeçalho
+# Cabeçalho Limpo
 st.title("RISCO AG / FBC")
 st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
 
@@ -140,10 +123,8 @@ with col_right:
     st.subheader("📊 Diagnóstico de Risco Processual")
     
     if btn_processar and uploaded_file is not None:
-        clean_key = api_key_input.strip() if api_key_input else ""
-        
-        if not clean_key:
-            st.error("Por favor, cole a sua Gemini API Key na barra lateral à esquerda para prosseguir.")
+        if not api_key:
+            st.error("Chave de API não configurada. Verifique as 'Secrets' no painel do Streamlit Cloud.")
         else:
             temp_path = f"temp_{uploaded_file.name}"
             with open(temp_path, "wb") as f:
@@ -151,8 +132,7 @@ with col_right:
 
             with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
                 try:
-                    # Inicialização com passagem explícita da chave da API
-                    client = genai.Client(api_key=clean_key)
+                    client = genai.Client(api_key=api_key)
                     
                     arquivo_processo = client.files.upload(file=temp_path)
                     
