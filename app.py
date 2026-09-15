@@ -12,37 +12,46 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização CSS personalizada
+# Estilização CSS para garantir legibilidade perfeita
 st.markdown("""
     <style>
-    .main { background-color: #0f172a; }
-    .stApp { color: #f8fafc; }
+    .stApp {
+        background-color: #0f172a;
+        color: #f8fafc;
+    }
+    h1, h2, h3, h4, h5, h6, label, .stMarkdown {
+        color: #f8fafc !important;
+    }
     .stButton>button {
-        background-color: #10b981;
-        color: #0f172a;
-        font-weight: bold;
-        border-radius: 8px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        width: 100%;
+        background-color: #10b981 !important;
+        color: #0f172a !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 0.6rem 1.2rem !important;
+        width: 100% !important;
     }
     .stButton>button:hover {
-        background-color: #34d399;
-        color: #0f172a;
+        background-color: #34d399 !important;
+        color: #0f172a !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # Sidebar - Configuração da API Key
 st.sidebar.title("⚙️ Configurações do Sistema")
-api_key_input = st.sidebar.text_input("Cole sua Gemini API Key:", type="password", value="AQ.Ab8RN6J3_FuM1-bhdexWkcd6LuI2HzYnNH6UKanqLW8fLYxXTQ")
+api_key_input = st.sidebar.text_input(
+    "Cole sua Gemini API Key:", 
+    type="password", 
+    value="AQ.Ab8RN6J3_FuM1-bhdexWkcd6LuI2HzYnNH6UKanqLW8fLYxXTQ"
+)
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
 **Parâmetros Ativos:**
 - Varredura Cronológica de Autos
 - Qualificação da Medida Constritiva (Penhor x SISBAJUD)
-- Retificação do Saldo Exequendo ($IMR$)
+- Retificação do Saldo Exequendo (IMR)
 - Avaliação de Vulnerabilidade de Defesa
 """)
 
@@ -72,7 +81,7 @@ Ao analisar o conjunto documental do processo, você DEVE, obrigatoriamente, obe
 1. LEITURA CRONOLÓGICA E HIERARQUIA DE EVENTOS.
 2. QUALIFICAÇÃO PRECISA DA MEDIDA CONSTRITIVA PRINCIPAL.
 3. MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
-4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / $IMR$).
+4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / IMR).
 5. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
    - Resumo Executivo do Caso
    - Objeto da Pretensão Primária vs. Secundária
