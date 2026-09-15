@@ -4,18 +4,28 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# Configuração da Página do Streamlit
+# Configuração da Página do Streamlit (Sem barra lateral)
 st.set_page_config(
     page_title="Risco AG & FBC - Auditoria Jurídica & Rating",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para uniformizar a tipografia do relatório
+# Estilização CSS para ocultar completamente a barra lateral e ampliar o conteúdo
 st.markdown("""
     <style>
+    /* Oculta completamente a barra lateral e o botão de expandir/colapsar */
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    
     .block-container {
         padding-top: 2rem !important;
+        max-width: 95% !important;
     }
     .stApp {
         background-color: #0f172a;
@@ -36,12 +46,6 @@ st.markdown("""
         font-weight: inherit !important;
     }
 
-    [data-testid="stSidebar"] {
-        background-color: #1e293b;
-    }
-    [data-testid="stSidebar"] * {
-        color: #f8fafc !important;
-    }
     [data-testid="stFileUploaderDropzone"] {
         background-color: #1e293b !important;
         border: 2px dashed #475569 !important;
@@ -85,19 +89,6 @@ st.markdown("""
 
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
-
-# Painel Lateral
-st.sidebar.title("⚙️ Painel do Sistema")
-st.sidebar.success("Autenticação Gemini API: Ativa")
-
-st.sidebar.markdown("---")
-st.sidebar.info("""
-**Parâmetros Ativos de Auditoria:**
-- Varredura Cronológica de Autos
-- Qualificação da Medida Constritiva (Penhor x SISBAJUD)
-- Retificação do Saldo Exequendo (IMR)
-- Avaliação de Vulnerabilidade de Defesa
-""")
 
 # Cabeçalho
 st.title("RISCO AG / FBC")
