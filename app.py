@@ -15,6 +15,11 @@ st.set_page_config(
 # Estilização CSS completa
 st.markdown("""
     <style>
+    /* Ajuste de espaçamento superior para não cortar o título */
+    .block-container {
+        padding-top: 2rem !important;
+    }
+    
     /* Fundo geral da aplicação */
     .stApp {
         background-color: #0f172a;
@@ -135,7 +140,9 @@ with col_right:
     st.subheader("📊 Diagnóstico de Risco Processual")
     
     if btn_processar and uploaded_file is not None:
-        if not api_key_input:
+        clean_key = api_key_input.strip() if api_key_input else ""
+        
+        if not clean_key:
             st.error("Por favor, cole a sua Gemini API Key na barra lateral à esquerda para prosseguir.")
         else:
             temp_path = f"temp_{uploaded_file.name}"
@@ -144,8 +151,8 @@ with col_right:
 
             with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
                 try:
-                    os.environ["GEMINI_API_KEY"] = api_key_input
-                    client = genai.Client()
+                    # Inicialização com passagem explícita da chave da API
+                    client = genai.Client(api_key=clean_key)
                     
                     arquivo_processo = client.files.upload(file=temp_path)
                     
