@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização CSS para contraste e eliminação de fundos brancos em valores/código
+# Estilização CSS para uniformizar a tipografia do relatório
 st.markdown("""
     <style>
     .block-container {
@@ -25,14 +25,15 @@ st.markdown("""
         color: #f8fafc !important;
     }
     
-    /* FIX: Remove o fundo branco de inline code (valores e textos entre crases) */
+    /* Padronização de blocos inline: mesma fonte, cor e estilo do texto normal */
     code {
-        background-color: #1e293b !important;
-        color: #10b981 !important;
-        border: 1px solid #334155 !important;
-        padding: 0.15rem 0.4rem !important;
-        border-radius: 4px !important;
-        font-weight: 600 !important;
+        background-color: transparent !important;
+        color: #f8fafc !important;
+        border: none !important;
+        padding: 0 !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
+        font-weight: inherit !important;
     }
 
     [data-testid="stSidebar"] {
@@ -121,7 +122,8 @@ Ao analisar o conjunto documental do processo, você DEVE, obrigatoriamente, obe
 2. QUALIFICAÇÃO PRECISA DA MEDIDA CONSTRITIVA PRINCIPAL.
 3. INSPEÇÃO DE PENHOR DE SAFRAS / NOTIFICAÇÃO DE TRADINGS E MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
 4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / IMR).
-5. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
+5. REGRA DE FORMATAÇÃO: NUNCA utilize crases (` `) para destacar valores monetários, números, IDs ou datas. Apresente todos os valores e texto no formato padrão contínuo.
+6. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
    - Resumo Executivo do Caso
    - Objeto da Pretensão Primária vs. Secundária
    - Evolução do Saldo Devedor / Exposição Financeira
