@@ -1,28 +1,27 @@
 import os
+import re
 import time
 import streamlit as st
 from google import genai
 from google.genai import types
 
-# Configuração da Página do Streamlit (Sem barra lateral)
+# Configuração da Página do Streamlit
 st.set_page_config(
-    page_title="Risco AG & FBC - Auditoria Jurídica & Rating",
+    page_title="Risco AG & FBC - Decision Engine & Credit Rating",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para ocultar completamente a barra lateral e ampliar o conteúdo
+# Estilização CSS para interface limpa e profissional
 st.markdown("""
     <style>
-    /* Oculta completamente a barra lateral e o botão de expandir/colapsar */
     [data-testid="stSidebar"] {
         display: none !important;
     }
     [data-testid="collapsedControl"] {
         display: none !important;
     }
-    
     .block-container {
         padding-top: 2rem !important;
         max-width: 95% !important;
@@ -34,8 +33,6 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
-    
-    /* Padronização de blocos inline: mesma fonte, cor e estilo do texto normal */
     code {
         background-color: transparent !important;
         color: #f8fafc !important;
@@ -45,7 +42,6 @@ st.markdown("""
         font-size: inherit !important;
         font-weight: inherit !important;
     }
-
     [data-testid="stFileUploaderDropzone"] {
         background-color: #1e293b !important;
         border: 2px dashed #475569 !important;
@@ -92,7 +88,7 @@ api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # Cabeçalho
 st.title("RISCO AG / FBC")
-st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
+st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
 
 st.markdown("---")
 
@@ -106,24 +102,35 @@ with col_left:
     btn_processar = st.button("Gerar Rating e Diagnóstico", disabled=(uploaded_file is None))
 
 SYSTEM_INSTRUCTION = """
-Você é um Auditor Jurídico de Elite especializado em Execuções de Agronegócio, Risco de Crédito e Contragarantias. Sua função é processar a íntegra dos autos de um processo judicial, realizar a varredura cronológica completa de todas as peças e emitir um Diagnóstico de Risco com Precisão Cirúrgica.
+Você é um Comitê de Risco de Crédito e Inteligência de Concessão especializado em Agronegócio. Sua função é auditar o passivo judicial exposto no processo analisado sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para uma futura operação de financiamento/fomento ao produtor/tomador avaliado.
 
-Ao analisar o conjunto documental do processo, você DEVE, obrigatoriamente, obedecer aos seguintes princípios operacionais:
-1. LEITURA CRONOLÓGICA E HIERARQUIA DE EVENTOS.
-2. QUALIFICAÇÃO PRECISA DA MEDIDA CONSTRITIVA PRINCIPAL.
-3. INSPEÇÃO DE PENHOR DE SAFRAS / NOTIFICAÇÃO DE TRADINGS E MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
-4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / IMR).
-5. REGRA DE FORMATAÇÃO: NUNCA utilize crases (` `) para destacar valores monetários, números, IDs ou datas. Apresente todos os valores e texto no formato padrão contínuo.
-6. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
-   - Resumo Executivo do Caso
-   - Objeto da Pretensão Primária vs. Secundária
-   - Evolução do Saldo Devedor / Exposição Financeira
-   - Cronologia dos Atos Processuais Relevantes e Decisões
-   - Matriz de Risco Atualizada e Próximos Passos Recomendados
+Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, medidas judiciais contra o réu ou peticionamento.
+
+Sua análise deve responder à pergunta principal: "Qual o impacto deste processo no risco de crédito do tomador e sob quais condições e garantias ele pode ser financiado?"
+
+AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTICO:
+
+1. DADOS DE IDENTIFICAÇÃO E MATERIALIDADE
+   - Identificação das Partes e Juízo.
+   - Classe Processual e Origem do Débito.
+   - Valor do Passivo Judicial Atualizado e Materialidade da Exposição.
+
+2. AVALIAÇÃO DE EXPOSIÇÃO E SENSIVILIDADE OPERACIONAL
+   - Risco de Constrição Imediata: Avaliar o risco real de o tomador sofrer bloqueio de contas (SISBAJUD), retenção de grãos em Tradings ou arresto de safras durante o ciclo do novo financiamento.
+   - Comportamento de Defesa: Avaliar se o devedor demonstrou inércia/revelia ou se há teses defensivas com potencial de anulação da dívida.
+
+3. PARECER DO COMITÊ DE CRÉDITO E RECOMENDAÇÃO DE CONCESSÃO
+   - Diagnóstico Final de Rating de Crédito (Ex: Risco Baixo, Moderado, Alto ou Crítico).
+   - Recomendação Final de Financiamento: (Aprovado / Aprovado com Condicionantes / Desfavorável).
+   - Estruturação de Garantias e Exigências Mitigatórias: Indicar detalhadamente as garantias requeridas caso se opte por financiar o cliente (ex: Alienação Fiduciária de Imóvel Rural com margem superior, CPR Física com Penhor de 1ª Categoria sobre área isenta de litígio, Avalista/Fiador de alto patrimônio, Travamento de recebíveis/Contrato de venda futura com Tradings de primeira linha).
+
+REGRA DE FORMATAÇÃO:
+- Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
+- NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
 with col_right:
-    st.subheader("📊 Diagnóstico de Risco Processual")
+    st.subheader("📊 Diagnóstico de Risco & Decisão de Crédito")
     
     if btn_processar and uploaded_file is not None:
         if not api_key:
@@ -133,7 +140,7 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
+            with st.spinner("Analisando autos sob a ótica de Risco e Concessão de Crédito..."):
                 try:
                     client = genai.Client(api_key=api_key)
                     
@@ -148,7 +155,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas.",
+                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, seguindo rigorosamente a estrutura definida nas instruções do sistema.",
                         ],
                         config=config,
                     )
@@ -157,8 +164,14 @@ with col_right:
                     os.remove(temp_path)
                     
                     if response and response.text:
-                        st.success("Auditoria concluída com sucesso!")
-                        st.markdown(response.text)
+                        st.success("Análise de Concessão de Crédito concluída com sucesso!")
+                        
+                        # Formatação para exibição limpa dos valores
+                        texto_formatado = response.text
+                        texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
+                        texto_formatado = re.sub(r'R\$\s*', r'R$ ', texto_formatado)
+                        
+                        st.markdown(texto_formatado)
                     else:
                         st.error("Não foi possível obter resposta do modelo. Tente novamente.")
                         
@@ -167,4 +180,4 @@ with col_right:
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
     else:
-        st.info("Aguardando upload de arquivo PDF para gerar a varredura e o relatório.")
+        st.info("Aguardando upload de arquivo PDF para gerar o parecer de crédito e a matriz de mitigação.")
