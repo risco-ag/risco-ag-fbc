@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização CSS completa
+# Estilização CSS para contraste e eliminação de fundos brancos em valores/código
 st.markdown("""
     <style>
     .block-container {
@@ -24,6 +24,17 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
+    
+    /* FIX: Remove o fundo branco de inline code (valores e textos entre crases) */
+    code {
+        background-color: #1e293b !important;
+        color: #10b981 !important;
+        border: 1px solid #334155 !important;
+        padding: 0.15rem 0.4rem !important;
+        border-radius: 4px !important;
+        font-weight: 600 !important;
+    }
+
     [data-testid="stSidebar"] {
         background-color: #1e293b;
     }
@@ -108,7 +119,7 @@ Você é um Auditor Jurídico de Elite especializado em Execuções de Agronegó
 Ao analisar o conjunto documental do processo, você DEVE, obrigatoriamente, obedecer aos seguintes princípios operacionais:
 1. LEITURA CRONOLÓGICA E HIERARQUIA DE EVENTOS.
 2. QUALIFICAÇÃO PRECISA DA MEDIDA CONSTRITIVA PRINCIPAL.
-3. MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
+3. INSPEÇÃO DE PENHOR DE SAFRAS / NOTIFICAÇÃO DE TRADINGS E MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
 4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / IMR).
 5. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
    - Resumo Executivo do Caso
@@ -131,7 +142,6 @@ with col_right:
 
             with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
                 try:
-                    # Inicialização com o novo SDK e a chave configurada
                     client = genai.Client(api_key=api_key)
                     
                     arquivo_processo = client.files.upload(file=temp_path)
@@ -141,7 +151,6 @@ with col_right:
                         temperature=0.1,
                     )
                     
-                    # Atualizado para utilizar a versão ativa gemini-3.6-flash
                     response = client.models.generate_content(
                         model="gemini-3.6-flash",
                         contents=[
@@ -151,7 +160,6 @@ with col_right:
                         config=config,
                     )
                     
-                    # Exclusão do arquivo remoto e local
                     client.files.delete(name=arquivo_processo.name)
                     os.remove(temp_path)
                     
