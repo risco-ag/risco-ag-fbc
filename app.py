@@ -8,20 +8,33 @@ from google.genai.errors import APIError
 # Configuração da Página do Streamlit
 st.set_page_config(
     page_title="Risco AG & FBC - Auditoria Jurídica & Rating",
-    page_icon="⚖️",
+    page_icon="📊",
     layout="wide"
 )
 
-# Estilização CSS para garantir legibilidade perfeita
+# Estilização CSS para ajustar contraste e legibilidade
 st.markdown("""
     <style>
+    /* Fundo da aplicação */
     .stApp {
         background-color: #0f172a;
         color: #f8fafc;
     }
-    h1, h2, h3, h4, h5, h6, label, .stMarkdown {
+    
+    /* Textos principais e cabeçalhos */
+    h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
+    
+    /* Ajuste de contraste para a Barra Lateral (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #1e293b;
+    }
+    [data-testid="stSidebar"] * {
+        color: #f8fafc !important;
+    }
+    
+    /* Botão de Ação Principal */
     .stButton>button {
         background-color: #10b981 !important;
         color: #0f172a !important;
@@ -35,6 +48,12 @@ st.markdown("""
         background-color: #34d399 !important;
         color: #0f172a !important;
     }
+    
+    /* Caixas de Alerta/Informação */
+    .stAlert {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -42,26 +61,21 @@ st.markdown("""
 st.sidebar.title("⚙️ Configurações do Sistema")
 api_key_input = st.sidebar.text_input(
     "Cole sua Gemini API Key:", 
-    type="password", 
-    value="AQ.Ab8RN6J3_FuM1-bhdexWkcd6LuI2HzYnNH6UKanqLW8fLYxXTQ"
+    type="password"
 )
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
-**Parâmetros Ativos:**
+**Parâmetros Ativos de Auditoria:**
 - Varredura Cronológica de Autos
 - Qualificação da Medida Constritiva (Penhor x SISBAJUD)
 - Retificação do Saldo Exequendo (IMR)
 - Avaliação de Vulnerabilidade de Defesa
 """)
 
-# Cabeçalho da Aplicação
-col_logo, col_title = st.columns([1, 6])
-with col_logo:
-    st.markdown("# ⚖️")
-with col_title:
-    st.title("DECISION ENGINE — RISCO AG / FBC")
-    st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
+# Cabeçalho Ajustado (Sem o ícone da balança e sem "DECISION ENGINE — ")
+st.title("RISCO AG / FBC")
+st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
 
 st.markdown("---")
 
@@ -69,7 +83,7 @@ st.markdown("---")
 col_left, col_right = st.columns([4, 8])
 
 with col_left:
-    st.subheader("📄 Ingestão de Processo")
+    st.subheader("Envio do Processo")
     uploaded_file = st.file_uploader("Arraste ou selecione o PDF integral dos autos:", type=["pdf"])
     
     btn_processar = st.button("🚀 Iniciar Auditoria Processual", disabled=(uploaded_file is None))
@@ -95,7 +109,7 @@ with col_right:
     
     if btn_processar and uploaded_file is not None:
         if not api_key_input:
-            st.error("Por favor, insira a chave da API no menu lateral.")
+            st.error("Por favor, cole a sua Gemini API Key na barra lateral à esquerda para prosseguir.")
         else:
             temp_path = f"temp_{uploaded_file.name}"
             with open(temp_path, "wb") as f:
