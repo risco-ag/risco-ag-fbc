@@ -1,0 +1,139 @@
+import os
+import time
+import streamlit as st
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
+
+# Configuração da Página do Streamlit
+st.set_page_config(
+    page_title="Risco AG & FBC - Auditoria Jurídica & Rating",
+    page_icon="⚖️",
+    layout="wide"
+)
+
+# Estilização CSS personalizada
+st.markdown("""
+    <style>
+    .main { background-color: #0f172a; }
+    .stApp { color: #f8fafc; }
+    .stButton>button {
+        background-color: #10b981;
+        color: #0f172a;
+        font-weight: bold;
+        border-radius: 8px;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        background-color: #34d399;
+        color: #0f172a;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Sidebar - Configuração da API Key
+st.sidebar.title("⚙️ Configurações do Sistema")
+api_key_input = st.sidebar.text_input("Cole sua Gemini API Key:", type="password", value="AQ.Ab8RN6J3_FuM1-bhdexWkcd6LuI2HzYnNH6UKanqLW8fLYxXTQ")
+
+st.sidebar.markdown("---")
+st.sidebar.info("""
+**Parâmetros Ativos:**
+- Varredura Cronológica de Autos
+- Qualificação da Medida Constritiva (Penhor x SISBAJUD)
+- Retificação do Saldo Exequendo ($IMR$)
+- Avaliação de Vulnerabilidade de Defesa
+""")
+
+# Cabeçalho da Aplicação
+col_logo, col_title = st.columns([1, 6])
+with col_logo:
+    st.markdown("# ⚖️")
+with col_title:
+    st.title("DECISION ENGINE — RISCO AG / FBC")
+    st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
+
+st.markdown("---")
+
+# Layout Principal em Duas Colunas
+col_left, col_right = st.columns([4, 8])
+
+with col_left:
+    st.subheader("📄 Ingestão de Processo")
+    uploaded_file = st.file_uploader("Arraste ou selecione o PDF integral dos autos:", type=["pdf"])
+    
+    btn_processar = st.button("🚀 Iniciar Auditoria Processual", disabled=(uploaded_file is None))
+
+SYSTEM_INSTRUCTION = """
+Você é um Auditor Jurídico de Elite especializado em Execuções de Agronegócio, Risco de Crédito e Contragarantias. Sua função é processar a íntegra dos autos de um processo judicial, realizar a varredura cronológica completa de todas as peças e emitir um Diagnóstico de Risco com Precisão Cirúrgica.
+
+Ao analisar o conjunto documental do processo, você DEVE, obrigatoriamente, obedecer aos seguintes princípios operacionais:
+1. LEITURA CRONOLÓGICA E HIERARQUIA DE EVENTOS.
+2. QUALIFICAÇÃO PRECISA DA MEDIDA CONSTRITIVA PRINCIPAL.
+3. MAPEAMENTO DINÂMICO DE STATUS E DILIGÊNCIAS.
+4. CÁLCULO DE IMPACTO FINANCEIRO REAL (Materialidade / $IMR$).
+5. ESTRUTURA DO DIAGNÓSTICO DE SAÍDA (Output):
+   - Resumo Executivo do Caso
+   - Objeto da Pretensão Primária vs. Secundária
+   - Evolução do Saldo Devedor / Exposição Financeira
+   - Cronologia dos Atos Processuais Relevantes e Decisões
+   - Matriz de Risco Atualizada e Próximos Passos Recomendados
+"""
+
+with col_right:
+    st.subheader("📊 Diagnóstico de Risco Processual")
+    
+    if btn_processar and uploaded_file is not None:
+        if not api_key_input:
+            st.error("Por favor, insira a chave da API no menu lateral.")
+        else:
+            temp_path = f"temp_{uploaded_file.name}"
+            with open(temp_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+
+            with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
+                try:
+                    os.environ["GEMINI_API_KEY"] = api_key_input
+                    client = genai.Client()
+                    
+                    arquivo_processo = client.files.upload(file=temp_path)
+                    
+                    config = types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.1,
+                    )
+                    
+                    modelos = ["gemini-3.6-flash", "gemini-3.1-pro-preview"]
+                    response = None
+                    
+                    for modelo in modelos:
+                        try:
+                            response = client.models.generate_content(
+                                model=modelo,
+                                contents=[
+                                    arquivo_processo,
+                                    "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas.",
+                                ],
+                                config=config,
+                            )
+                            if response:
+                                break
+                        except APIError:
+                            time.sleep(3)
+                    
+                    client.files.delete(name=arquivo_processo.name)
+                    os.remove(temp_path)
+                    
+                    if response:
+                        st.success("Auditoria concluída com sucesso!")
+                        st.markdown(response.text)
+                    else:
+                        st.error("Ocorreu uma oscilação nos servidores do Google. Tente novamente em instantes.")
+                        
+                except Exception as e:
+                    st.error(f"Erro no processamento: {str(e)}")
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+    else:
+        st.info("Aguardando upload de arquivo PDF para gerar a varredura e o relatório.")
