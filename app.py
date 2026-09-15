@@ -1,7 +1,8 @@
 import os
 import time
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # Configuração da Página do Streamlit
 st.set_page_config(
@@ -71,7 +72,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Obtém a chave configurada nos Secrets
-api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
 # Painel Lateral
 st.sidebar.title("⚙️ Painel do Sistema")
@@ -128,33 +129,29 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Enviando e analisando autos via Gemini..."):
+            with st.spinner("Enviando e analisando autos via Gemini 2.5 Flash..."):
                 try:
-                    # Configura a chave de API
-                    genai.configure(api_key=api_key)
+                    # Inicialização com o novo SDK google-genai
+                    client = genai.Client(api_key=api_key)
                     
-                    # Upload do arquivo PDF para a API do Gemini
-                    arquivo_processo = genai.upload_file(temp_path)
+                    arquivo_processo = client.files.upload(file=temp_path)
                     
-                    # Aguarda o processamento do arquivo se necessário
-                    while arquivo_processo.state.name == "PROCESSING":
-                        time.sleep(2)
-                        arquivo_processo = genai.get_file(arquivo_processo.name)
-                    
-                    # Configura o modelo Generativo com as instruções de sistema
-                    model = genai.GenerativeModel(
-                        model_name="gemini-1.5-flash",
-                        system_instruction=SYSTEM_INSTRUCTION
+                    config = types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.1,
                     )
                     
-                    # Gera a análise
-                    response = model.generate_content([
-                        arquivo_processo,
-                        "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas."
-                    ])
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=[
+                            arquivo_processo,
+                            "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas.",
+                        ],
+                        config=config,
+                    )
                     
-                    # Limpeza do arquivo na nuvem e local
-                    genai.delete_file(arquivo_processo.name)
+                    # Exclusão do arquivo remoto e local
+                    client.files.delete(name=arquivo_processo.name)
                     os.remove(temp_path)
                     
                     if response and response.text:
