@@ -129,9 +129,9 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Enviando e analisando autos via Gemini 2.5 Flash..."):
+            with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
                 try:
-                    # Inicialização com o novo SDK google-genai
+                    # Inicialização com o novo SDK e a chave configurada
                     client = genai.Client(api_key=api_key)
                     
                     arquivo_processo = client.files.upload(file=temp_path)
@@ -141,8 +141,9 @@ with col_right:
                         temperature=0.1,
                     )
                     
+                    # Atualizado para utilizar a versão ativa gemini-3.6-flash
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
                             "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas.",
