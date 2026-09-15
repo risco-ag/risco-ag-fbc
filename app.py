@@ -1,9 +1,7 @@
 import os
 import time
 import streamlit as st
-from google import genai
-from google.genai import types
-from google.genai.errors import APIError
+import google.generativeai as genai
 
 # Configuração da Página do Streamlit
 st.set_page_config(
@@ -72,10 +70,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Lógica para obter a API Key automaticamente dos Secrets do Streamlit
+# Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
-# Sidebar Informativa (Sem caixa de texto para senha)
+# Painel Lateral
 st.sidebar.title("⚙️ Painel do Sistema")
 st.sidebar.success("Autenticação Gemini API: Ativa")
 
@@ -88,13 +86,13 @@ st.sidebar.info("""
 - Avaliação de Vulnerabilidade de Defesa
 """)
 
-# Cabeçalho Limpo
+# Cabeçalho
 st.title("RISCO AG / FBC")
 st.caption("Auditoria Jurídica Processual e Rating de Crédito do Agronegócio")
 
 st.markdown("---")
 
-# Layout Principal em Duas Colunas
+# Layout Principal
 col_left, col_right = st.columns([4, 8])
 
 with col_left:
@@ -130,43 +128,40 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Enviando e analisando autos via Gemini 3.6 Flash..."):
+            with st.spinner("Enviando e analisando autos via Gemini..."):
                 try:
-                    client = genai.Client(api_key=api_key)
+                    # Configura a chave de API
+                    genai.configure(api_key=api_key)
                     
-                    arquivo_processo = client.files.upload(file=temp_path)
+                    # Upload do arquivo PDF para a API do Gemini
+                    arquivo_processo = genai.upload_file(temp_path)
                     
-                    config = types.GenerateContentConfig(
-                        system_instruction=SYSTEM_INSTRUCTION,
-                        temperature=0.1,
+                    # Aguarda o processamento do arquivo se necessário
+                    while arquivo_processo.state.name == "PROCESSING":
+                        time.sleep(2)
+                        arquivo_processo = genai.get_file(arquivo_processo.name)
+                    
+                    # Configura o modelo Generativo com as instruções de sistema
+                    model = genai.GenerativeModel(
+                        model_name="gemini-1.5-flash",
+                        system_instruction=SYSTEM_INSTRUCTION
                     )
                     
-                    modelos = ["gemini-3.6-flash", "gemini-3.1-pro-preview"]
-                    response = None
+                    # Gera a análise
+                    response = model.generate_content([
+                        arquivo_processo,
+                        "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas."
+                    ])
                     
-                    for modelo in modelos:
-                        try:
-                            response = client.models.generate_content(
-                                model=modelo,
-                                contents=[
-                                    arquivo_processo,
-                                    "Realize o diagnóstico completo e cronológico deste processo judicial seguindo estritamente as instruções fornecidas.",
-                                ],
-                                config=config,
-                            )
-                            if response:
-                                break
-                        except APIError:
-                            time.sleep(3)
-                    
-                    client.files.delete(name=arquivo_processo.name)
+                    # Limpeza do arquivo na nuvem e local
+                    genai.delete_file(arquivo_processo.name)
                     os.remove(temp_path)
                     
-                    if response:
+                    if response and response.text:
                         st.success("Auditoria concluída com sucesso!")
                         st.markdown(response.text)
                     else:
-                        st.error("Ocorreu uma oscilação nos servidores do Google. Tente novamente em instantes.")
+                        st.error("Não foi possível obter resposta do modelo. Tente novamente.")
                         
                 except Exception as e:
                     st.error(f"Erro no processamento: {str(e)}")
