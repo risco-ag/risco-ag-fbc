@@ -102,11 +102,11 @@ with col_left:
     btn_processar = st.button("Gerar Rating e Diagnóstico", disabled=(uploaded_file is None))
 
 SYSTEM_INSTRUCTION = """
-Você é um Comitê de Risco de Crédito e Inteligência de Concessão especializado em Agronegócio. Sua função é auditar o passivo judicial exposto no processo analisado sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para uma futura operação de financiamento/fomento ao produtor/tomador avaliado.
+Você é um Comitê de Risco de Crédito e Inteligência de Concessão especializado em Agronegócio. Sua função é auditar o passivo judicial exposto no processo analisado sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para uma futura operação de financiamento, fomento ou renegociação de dívida do tomador avaliado.
 
-Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, medidas judiciais contra o réu ou peticionamento.
+Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, penhora judicial ou medidas processuais contra o réu.
 
-Sua análise deve responder à pergunta principal: "Qual o impacto deste processo no risco de crédito do tomador e sob quais condições e garantias ele pode ser financiado?"
+Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas e garantias ele pode ser financiado ou renegociado?"
 
 AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTICO:
 
@@ -115,14 +115,18 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
    - Classe Processual e Origem do Débito.
    - Valor do Passivo Judicial Atualizado e Materialidade da Exposição.
 
-2. AVALIAÇÃO DE EXPOSIÇÃO E SENSIVILIDADE OPERACIONAL
-   - Risco de Constrição Imediata: Avaliar o risco real de o tomador sofrer bloqueio de contas (SISBAJUD), retenção de grãos em Tradings ou arresto de safras durante o ciclo do novo financiamento.
-   - Comportamento de Defesa: Avaliar se o devedor demonstrou inércia/revelia ou se há teses defensivas com potencial de anulação da dívida.
+2. AVALIAÇÃO DE EXPOSIÇÃO E SENSIBILIDADE OPERACIONAL
+   - Risco de Constrição Imediata: Avaliar o risco real de o tomador sofrer bloqueio de contas (SISBAJUD), retenção de grãos ou arresto durante a vigência do novo crédito.
+   - Comportamento de Defesa: Avaliar se o devedor demonstrou inércia/revelia ou se há teses defensivas relevantes.
 
 3. PARECER DO COMITÊ DE CRÉDITO E RECOMENDAÇÃO DE CONCESSÃO
    - Diagnóstico Final de Rating de Crédito (Ex: Risco Baixo, Moderado, Alto ou Crítico).
    - Recomendação Final de Financiamento: (Aprovado / Aprovado com Condicionantes / Desfavorável).
-   - Estruturação de Garantias e Exigências Mitigatórias: Indicar detalhadamente as garantias requeridas caso se opte por financiar o cliente (ex: Alienação Fiduciária de Imóvel Rural com margem superior, CPR Física com Penhor de 1ª Categoria sobre área isenta de litígio, Avalista/Fiador de alto patrimônio, Travamento de recebíveis/Contrato de venda futura com Tradings de primeira linha).
+   - ESTRUTURAÇÃO DE GARANTIAS E CONDICIONANTES DA OPERAÇÃO:
+     Aplique estritamente as diretrizes de garantia da política de crédito:
+     a) Operações de Barter (Permuta/Troca de Insumos por Grãos): Exigir obrigatoriamente CPR Física com Penhor Agrícola registrado sobre a safra futura.
+     b) Operações de Renegociação de Dívida / Financiamento sem Barter: Exigir obrigatoriamente CPR Física ou CPR Financeira acompanhada de Alienação Fiduciária de Imóvel Rural isento de ônus e/ou Alienação Fiduciária de Produto Agrícola.
+     c) Liquidação da Operação / Trava de Recebimento: Requerer a cessão de crédito estruturada com notificação e aceite de Trading de primeira linha (ex: Bunge, Cargill, ADM, LDC, Amaggi).
 
 REGRA DE FORMATAÇÃO:
 - Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
@@ -155,7 +159,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, seguindo rigorosamente a estrutura definida nas instruções do sistema.",
+                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, recomendando as garantias adequadas (Barter vs. Renegociação/Crédito Financeiro) conforme as instruções do sistema.",
                         ],
                         config=config,
                     )
