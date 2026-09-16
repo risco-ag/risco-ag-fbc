@@ -1,9 +1,16 @@
 import os
 import re
 import time
+import io
 import streamlit as st
 from google import genai
 from google.genai import types
+
+# Importações para geração do PDF via ReportLab
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+from reportlab.lib import colors
 
 # Configuração da Página do Streamlit
 st.set_page_config(
@@ -76,12 +83,112 @@ st.markdown("""
         background-color: #34d399 !important;
         color: #0f172a !important;
     }
+    .stDownloadButton>button {
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 0.6rem 1.2rem !important;
+        width: 100% !important;
+        font-size: 1.05rem !important;
+    }
+    .stDownloadButton>button:hover {
+        background-color: #60a5fa !important;
+        color: #ffffff !important;
+    }
     .stAlert {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Função para gerar o arquivo PDF estilizado em memória
+def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+    
+    styles = getSampleStyleSheet()
+    
+    style_title = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#0f172a'),
+        spaceAfter=4
+    )
+    
+    style_subtitle = ParagraphStyle(
+        'DocSubtitle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=12,
+        textColor=colors.HexColor('#475569'),
+        spaceAfter=15
+    )
+    
+    style_heading = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=13,
+        leading=16,
+        textColor=colors.HexColor('#1e3a8a'),
+        spaceBefore=12,
+        spaceAfter=6
+    )
+    
+    style_body = ParagraphStyle(
+        'BodyTextCustom',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=6
+    )
+
+    story = []
+    
+    # Cabeçalho do PDF
+    story.append(Paragraph("RISCO AG / FBC — RELATÓRIO DE CRÉDITO E AUDITORIA", style_title))
+    story.append(Paragraph(f"Documento Base: {nome_arquivo_original} | Emissão do Parecer", style_subtitle))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=15))
+    
+    # Processa linhas de Markdown para converter em tags suportadas pelo ReportLab
+    linhas = texto_relatorio.split('\n')
+    for linha in linhas:
+        linha_limpa = linha.strip()
+        if not linha_limpa:
+            story.append(Spacer(1, 4))
+            continue
+            
+        # Converte negrito em Markdown (**texto**) para <b>texto</b>
+        linha_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linha_limpa)
+        
+        if linha_limpa.startswith('# ') or linha_limpa.startswith('## ') or linha_limpa.startswith('### '):
+            header_text = re.sub(r'^#+\s*', '', linha_formatted)
+            story.append(Paragraph(header_text, style_heading))
+        elif linha_limpa.startswith('- ') or linha_limpa.startswith('* '):
+            bullet_text = re.sub(r'^[\-\*]\s*', '', linha_formatted)
+            story.append(Paragraph(f"• {bullet_text}", style_body))
+        else:
+            story.append(Paragraph(linha_formatted, style_body))
+            
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
@@ -175,7 +282,19 @@ with col_right:
                         texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
                         texto_formatado = re.sub(r'R\$\s*', r'R$ ', texto_formatado)
                         
+                        # Exibe a análise na tela
                         st.markdown(texto_formatado)
+                        
+                        # Gera o PDF em memória para download
+                        pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
+                        
+                        st.markdown("---")
+                        st.download_button(
+                            label="📥 Baixar Parecer Completo em PDF",
+                            data=pdf_bytes,
+                            file_name=f"Parecer_Credito_{uploaded_file.name.replace('.pdf', '')}.pdf",
+                            mime="application/pdf"
+                        )
                     else:
                         st.error("Não foi possível obter resposta do modelo. Tente novamente.")
                         
