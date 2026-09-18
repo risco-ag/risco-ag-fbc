@@ -14,13 +14,13 @@ from reportlab.lib import colors
 
 # Configuração da Página do Streamlit
 st.set_page_config(
-    page_title="Risco AG | FBC - Decision Engine & Credit Rating",
+    page_title="Risco AG & FBC - Decision Engine & Credit Rating",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para interface limpa, profissional e identidade das marcas
+# Estilização CSS para interface limpa e profissional
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -40,19 +40,6 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
-    
-    /* Estilização da Logo da Marca */
-    .brand-header {
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        margin-bottom: 0.2rem;
-    }
-    .brand-risco { color: #ffffff !important; }
-    .brand-ag { color: #10b981 !important; }
-    .brand-pipe { color: #ffffff !important; margin: 0 8px; }
-    .brand-fbc { color: #e2e8f0 !important; }
-
     code {
         background-color: transparent !important;
         color: #f8fafc !important;
@@ -114,25 +101,67 @@ st.markdown("""
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
     }
+    
+    /* Estilização dos campos de input de Login */
+    div[data-baseweb="input"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# Função para sanitizar valores e escapar o $ para evitar que o Streamlit oculte o cifrão como fórmula LaTeX
-def sanitizar_moeda_para_markdown(texto):
-    if not texto:
-        return texto
-    # Garante que qualquer 'R' isolado seguido de número receba o cifrão
-    texto = re.sub(r'\bR\s*(\d)', r'R$ \1', texto)
-    texto = re.sub(r'\bR\s+(?=\d)', r'R$ ', texto)
-    # Escapa o cifrão para \$ no Streamlit Markdown para evitar que suma na tela
-    texto = re.sub(r'R\$\s*', r'R\\$ ', texto)
-    return texto
+# -----------------------------------------------------------------------------
+# SISTEMA DE AUTENTICAÇÃO POR LOGIN E SENHA
+# -----------------------------------------------------------------------------
+def check_password():
+    """Retorna True se o usuário digitou o login e senha corretos."""
+    def password_entered():
+        users = st.secrets.get("passwords", {})
+        username = st.session_state.get("username", "").strip()
+        password = st.session_state.get("password", "").strip()
 
-def sanitizar_moeda_para_pdf(texto):
-    if not texto:
-        return texto
-    # Para o PDF, remove a barra invertida do LaTeX mantendo apenas R$ 
-    return texto.replace(r'R\$', 'R$')
+        if username in users and users[username] == password:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Não armazena a senha na sessão
+            del st.session_state["username"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # Exibe a tela de login na primeira visita
+        col_a, col_b, col_c = st.columns([3, 4, 3])
+        with col_b:
+            st.title("🔒 Acesso Restrito")
+            st.caption("RISCO AG / FBC — Decision Engine")
+            st.markdown("---")
+            st.text_input("Usuário", key="username")
+            st.text_input("Senha", type="password", key="password")
+            st.button("Entrar no Sistema", on_click=password_entered)
+        return False
+
+    elif not st.session_state["password_correct"]:
+        # Exibe mensagem de erro e reapresenta o formulário
+        col_a, col_b, col_c = st.columns([3, 4, 3])
+        with col_b:
+            st.title("🔒 Acesso Restrito")
+            st.caption("RISCO AG / FBC — Decision Engine")
+            st.markdown("---")
+            st.text_input("Usuário", key="username")
+            st.text_input("Senha", type="password", key="password")
+            st.button("Entrar no Sistema", on_click=password_entered)
+            st.error("😕 Usuário ou senha incorretos.")
+        return False
+    else:
+        return True
+
+# Bloqueia a execução do aplicativo até que a senha seja validada
+if not check_password():
+    st.stop()
+
+# -----------------------------------------------------------------------------
+# APLICAÇÃO PRINCIPAL (EXIBIDA APÓS O LOGIN BEM-SUCEDIDO)
+# -----------------------------------------------------------------------------
 
 # Função para gerar o arquivo PDF estilizado em memória
 def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
@@ -148,6 +177,16 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     
     styles = getSampleStyleSheet()
     
+    style_title = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#0f172a'),
+        spaceAfter=4
+    )
+    
     style_subtitle = ParagraphStyle(
         'DocSubtitle',
         parent=styles['Normal'],
@@ -162,8 +201,8 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'SectionHeader',
         parent=styles['Heading2'],
         fontName='Helvetica-Bold',
-        fontSize=12,
-        leading=15,
+        fontSize=13,
+        leading=16,
         textColor=colors.HexColor('#1e3a8a'),
         spaceBefore=12,
         spaceAfter=6
@@ -173,21 +212,20 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'BodyTextCustom',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9.5,
-        leading=13.5,
+        fontSize=10,
+        leading=14,
         textColor=colors.HexColor('#1e293b'),
         spaceAfter=6
     )
 
     story = []
     
-    header_html = '<font color="#0f172a"><b>Risco</b></font> <font color="#10b981"><b>AG</b></font> <font color="#64748b">|</font> <font color="#475569"><b>FBC</b></font> <font size="12" color="#334155"> — Parecer de Crédito & Rating</font>'
-    style_pdf_header = ParagraphStyle('PDFHeader', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, leading=22, spaceAfter=4)
+    # Cabeçalho do PDF
+    story.append(Paragraph("RISCO AG / FBC — RELATÓRIO DE CRÉDITO E AUDITORIA", style_title))
+    story.append(Paragraph(f"Documento Base: {nome_arquivo_original} | Emissão do Parecer", style_subtitle))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=15))
     
-    story.append(Paragraph(header_html, style_pdf_header))
-    story.append(Paragraph(f"Documento Auditado: {nome_arquivo_original} | Avaliação de Risco de Crédito", style_subtitle))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=12))
-    
+    # Processa linhas de Markdown para converter em tags suportadas pelo ReportLab
     linhas = texto_relatorio.split('\n')
     for linha in linhas:
         linha_limpa = linha.strip()
@@ -213,9 +251,16 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
-# Cabeçalho com Logo Ajustada
-st.markdown('<div class="brand-header"><span class="brand-risco">Risco</span><span class="brand-ag">AG</span><span class="brand-pipe">|</span><span class="brand-fbc">FBC</span></div>', unsafe_allow_html=True)
-st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
+# Cabeçalho e botão de sair
+col_tit, col_logout = st.columns([9, 1])
+with col_tit:
+    st.title("RISCO AG / FBC")
+    st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
+with col_logout:
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("Sair"):
+        st.session_state["password_correct"] = False
+        st.rerun()
 
 st.markdown("---")
 
@@ -233,7 +278,7 @@ Você é um Comitê de Risco de Crédito e Inteligência de Concessão especiali
 
 Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, penhora judicial ou medidas processuais contra o réu.
 
-Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas, alçadas e garantias ele pode ser financiado ou renegociado?"
+Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas e garantias ele pode ser financiado ou renegociado?"
 
 AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTICO:
 
@@ -249,22 +294,14 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
 3. PARECER DO COMITÊ DE CRÉDITO E RECOMENDAÇÃO DE CONCESSÃO
    - Diagnóstico Final de Rating de Crédito (Ex: Risco Baixo, Moderado, Alto ou Crítico).
    - Recomendação Final de Financiamento: (Aprovado / Aprovado com Condicionantes / Desfavorável).
-   - ALÇADA DE APROVAÇÃO EXIGIDA (Determinar a alçada necessária com base no valor da exposição/passivo analisado):
-     * Até R$ 500.000,00: Coordenador de Crédito
-     * Acima de R$ 500.000,00 e até R$ 1.000.000,00: Gerente de Crédito
-     * Acima de R$ 1.000.000,00: CFO (Chief Financial Officer)
    - ESTRUTURAÇÃO DE GARANTIAS E CONDICIONANTES DA OPERAÇÃO:
      Aplique estritamente as diretrizes de garantia da política de crédito:
      a) Operações de Barter (Permuta/Troca de Insumos por Grãos): Exigir obrigatoriamente CPR Física com Penhor Agrícola registrado sobre a safra futura.
      b) Operações de Renegociação de Dívida / Financiamento sem Barter: Exigir obrigatoriamente CPR Física ou CPR Financeira acompanhada de Alienação Fiduciária de Imóvel Rural isento de ônus e/ou Alienação Fiduciária de Produto Agrícola.
      c) Liquidação da Operação / Trava de Recebimento: Requerer a cessão de crédito estruturada com notificação e aceite de Trading de primeira linha (ex: Bunge, Cargill, ADM, LDC, Amaggi).
 
-4. NOTA DE ISENÇÃO DE RESPONSABILIDADE E CONFORMIDADE ÉTICA (OBRIGATÓRIO NO FINAL DO PARECER):
-   Insira obrigatoriamente a seguinte ressalva ao final de todo diagnóstico gerado:
-   "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
-
-REGRA RIGOROSA DE FORMATAÇÃO:
-- Escreva TODOS os valores monetários estritamente no formato R$ 0,00 (exemplo: R$ 130.958,18 e R$ 500.000,00).
+REGRA DE FORMATAÇÃO:
+- Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
@@ -279,7 +316,7 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Analisando autos sob a ótica de Risco, Alçadas e Concessão de Crédito..."):
+            with st.spinner("Analisando autos sob a ótica de Risco e Concessão de Crédito..."):
                 try:
                     client = genai.Client(api_key=api_key)
                     
@@ -294,7 +331,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, especificando a Alçada de Aprovação requerida, garantias necessárias e o disclaimer institucional.",
+                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, recomendando as garantias adequadas (Barter vs. Renegociação/Crédito Financeiro) conforme as instruções do sistema.",
                         ],
                         config=config,
                     )
@@ -305,17 +342,15 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Formata o texto para o Streamlit (escapando a barra para não sumir no LaTeX)
-                        texto_markdown = sanitizar_moeda_para_markdown(response.text)
+                        # Formatação para exibição limpa dos valores
+                        texto_formatado = response.text
+                        texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
+                        texto_formatado = re.sub(r'R\$\s*', r'R$ ', texto_formatado)
                         
-                        # Formata o texto para o PDF (sem a barra extra do LaTeX)
-                        texto_pdf = sanitizar_moeda_para_pdf(texto_markdown)
-                        
-                        # Exibe a análise na tela
-                        st.markdown(texto_markdown)
+                        st.markdown(texto_formatado)
                         
                         # Gera o PDF em memória para download
-                        pdf_bytes = gerar_pdf_relatorio(texto_pdf, uploaded_file.name)
+                        pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
                         
                         st.markdown("---")
                         st.download_button(
