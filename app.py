@@ -117,13 +117,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Função para sanitizar e aplicar R$ obrigatoriamente a qualquer valor monetário
+# Função corrigida para sanitizar valores monetários sem erro de look-behind
 def sanitizar_moeda(texto):
     if not texto:
         return texto
-    # Trata qualquer variação de "R " ou "R" isolado antes de números, inclusive dentro de parênteses "(R 100)"
-    texto = re.sub(r'R\s+(\d)', r'R$ \1', texto)
-    texto = re.sub(r'(?<=\(|\s|^)R\s+(?=\d)', r'R$ ', texto)
+    # \b captura o início da palavra 'R' (mesmo após parênteses como '(R 145...')
+    texto = re.sub(r'\bR\s+(?=\d)', r'R$ ', texto)
     texto = re.sub(r'R\$\s*\$?', r'R$ ', texto)
     return texto
 
@@ -174,7 +173,6 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 
     story = []
     
-    # Cabeçalho estilizado do PDF com FBC em cinza claro
     header_html = '<font color="#0f172a"><b>Risco</b></font> <font color="#10b981"><b>AG</b></font> <font color="#64748b">|</font> <font color="#475569"><b>FBC</b></font> <font size="12" color="#334155"> — Parecer de Crédito & Rating</font>'
     style_pdf_header = ParagraphStyle('PDFHeader', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, leading=22, spaceAfter=4)
     
@@ -182,7 +180,6 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     story.append(Paragraph(f"Documento Auditado: {nome_arquivo_original} | Avaliação de Risco de Crédito", style_subtitle))
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=12))
     
-    # Processa linhas de Markdown para converter em tags do ReportLab
     linhas = texto_relatorio.split('\n')
     for linha in linhas:
         linha_limpa = linha.strip()
@@ -300,13 +297,10 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Processamento pós-geração forçado para garantir R$ em 100% dos valores
                         texto_formatado = sanitizar_moeda(response.text)
                         
-                        # Exibe a análise na tela
                         st.markdown(texto_formatado)
                         
-                        # Gera o PDF em memória para download
                         pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
                         
                         st.markdown("---")
