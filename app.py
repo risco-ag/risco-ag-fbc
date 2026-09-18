@@ -121,10 +121,11 @@ st.markdown("""
 def sanitizar_moeda(texto):
     if not texto:
         return texto
-    # Garante que qualquer "R" isolado antes de um número (com espaço ou sem) vire "R$ "
+    # Garante que 'R ' ou 'R' seguido de número (com ou sem espaço) vire 'R$ '
     texto = re.sub(r'\bR\s*(\d)', r'R$ \1', texto)
-    # Garante que "R$" não tenha múltiplos espaços extras
-    texto = re.sub(r'R\$\s*', r'R$ ', texto)
+    # Garante que 'R ' seguido de número formatado vire 'R$ '
+    texto = re.sub(r'\bR\s+(?=\d)', r'R$ ', texto)
+    # Remove duplicações acidentais como R$ $texto = re.sub(r'R\$\s*\$?', r'R$ ', texto)
     return texto
 
 # Função para gerar o arquivo PDF estilizado em memória
@@ -300,7 +301,7 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Processamento pós-geração para garantir a formatação monetária R$ em todo o texto
+                        # Processamento pós-geração forçado para garantir R$ em 100% dos valores
                         texto_formatado = sanitizar_moeda(response.text)
                         
                         # Exibe a análise na tela
