@@ -198,7 +198,7 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
-# Cabeçalho com Logo Ajustada (FBC em cinza claro)
+# Cabeçalho com Logo Ajustada
 st.markdown('<div class="brand-header"><span class="brand-risco">Risco</span><span class="brand-ag">AG</span><span class="brand-pipe">|</span><span class="brand-fbc">FBC</span></div>', unsafe_allow_html=True)
 st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
 
@@ -218,7 +218,7 @@ Você é um Comitê de Risco de Crédito e Inteligência de Concessão especiali
 
 Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, penhora judicial ou medidas processuais contra o réu.
 
-Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas e garantias ele pode ser financiado ou renegociado?"
+Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas, alçadas e garantias ele pode ser financiado ou renegociado?"
 
 AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTICO:
 
@@ -234,6 +234,10 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
 3. PARECER DO COMITÊ DE CRÉDITO E RECOMENDAÇÃO DE CONCESSÃO
    - Diagnóstico Final de Rating de Crédito (Ex: Risco Baixo, Moderado, Alto ou Crítico).
    - Recomendação Final de Financiamento: (Aprovado / Aprovado com Condicionantes / Desfavorável).
+   - ALÇADA DE APROVAÇÃO EXIGIDA (Determinar a alçada necessária com base no valor da exposição/passivo analisado):
+     * Até R$ 500.000,00: Coordenador de Crédito
+     * Acima de R$ 500.000,00 e até R$ 1.000.000,00: Gerente de Crédito
+     * Acima de R$ 1.000.000,00: CFO (Chief Financial Officer)
    - ESTRUTURAÇÃO DE GARANTIAS E CONDICIONANTES DA OPERAÇÃO:
      Aplique estritamente as diretrizes de garantia da política de crédito:
      a) Operações de Barter (Permuta/Troca de Insumos por Grãos): Exigir obrigatoriamente CPR Física com Penhor Agrícola registrado sobre a safra futura.
@@ -260,7 +264,7 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Analisando autos sob a ótica de Risco e Concessão de Crédito..."):
+            with st.spinner("Analisando autos sob a ótica de Risco, Alçadas e Concessão de Crédito..."):
                 try:
                     client = genai.Client(api_key=api_key)
                     
@@ -275,7 +279,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, incluindo a nota final de conformidade ética e validação pelo jurídico do consulente.",
+                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, especificando a Alçada de Aprovação requerida, garantias necessárias e o disclaimer institucional.",
                         ],
                         config=config,
                     )
