@@ -249,7 +249,7 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
    "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
 
 REGRA DE FORMATAÇÃO:
-- Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
+- Escreva todos os valores monetários estritamente no formato R$ 0,00 (ex: R$ 130.958,18). NUNCA omita o símbolo do cifrão ($).
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
@@ -290,10 +290,9 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Formatação para exibição limpa dos valores
+                        # Tratamento robusto para garantir que qualquer "R " seguido de número vire "R$ "
                         texto_formatado = response.text
-                        texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
-                        texto_formatado = re.sub(r'R\$\s*', r'R$ ', texto_formatado)
+                        texto_formatado = re.sub(r'\b(R)\s+(?=\d)', r'R$', texto_formatado)
                         
                         # Exibe a análise na tela
                         st.markdown(texto_formatado)
