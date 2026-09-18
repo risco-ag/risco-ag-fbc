@@ -117,14 +117,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Função corrigida para sanitizar valores monetários sem erro de look-behind
-def sanitizar_moeda(texto):
+# Função para sanitizar valores e escapar o $ para evitar que o Streamlit oculte o cifrão como fórmula LaTeX
+def sanitizar_moeda_para_markdown(texto):
     if not texto:
         return texto
-    # \b captura o início da palavra 'R' (mesmo após parênteses como '(R 145...')
+    # Garante que qualquer 'R' isolado seguido de número receba o cifrão
+    texto = re.sub(r'\bR\s*(\d)', r'R$ \1', texto)
     texto = re.sub(r'\bR\s+(?=\d)', r'R$ ', texto)
-    texto = re.sub(r'R\$\s*\$?', r'R$ ', texto)
+    # Escapa o cifrão para \$ no Streamlit Markdown para evitar que suma na tela
+    texto = re.sub(r'R\$\s*', r'R\\$ ', texto)
     return texto
+
+def sanitizar_moeda_para_pdf(texto):
+    if not texto:
+        return texto
+    # Para o PDF, remove a barra invertida do LaTeX mantendo apenas R$ 
+    return texto.replace(r'R\$', 'R$')
 
 # Função para gerar o arquivo PDF estilizado em memória
 def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
@@ -256,7 +264,7 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
    "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
 
 REGRA RIGOROSA DE FORMATAÇÃO:
-- Escreva TODOS os valores monetários estritamente no formato R$ 0,00 (exemplo: R$ 130.958,18 e R$ 500.000,00). Jamais omita o símbolo $.
+- Escreva TODOS os valores monetários estritamente no formato R$ 0,00 (exemplo: R$ 130.958,18 e R$ 500.000,00).
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
@@ -297,11 +305,17 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        texto_formatado = sanitizar_moeda(response.text)
+                        # Formata o texto para o Streamlit (escapando a barra para não sumir no LaTeX)
+                        texto_markdown = sanitizar_moeda_para_markdown(response.text)
                         
-                        st.markdown(texto_formatado)
+                        # Formata o texto para o PDF (sem a barra extra do LaTeX)
+                        texto_pdf = sanitizar_moeda_para_pdf(texto_markdown)
                         
-                        pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
+                        # Exibe a análise na tela
+                        st.markdown(texto_markdown)
+                        
+                        # Gera o PDF em memória para download
+                        pdf_bytes = gerar_pdf_relatorio(texto_pdf, uploaded_file.name)
                         
                         st.markdown("---")
                         st.download_button(
