@@ -14,13 +14,13 @@ from reportlab.lib import colors
 
 # Configuração da Página do Streamlit
 st.set_page_config(
-    page_title="Risco AG & FBC - Decision Engine & Credit Rating",
+    page_title="Risco AG | FBC - Decision Engine & Credit Rating",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para interface limpa e profissional
+# Estilização CSS para interface limpa, profissional e identidade das marcas
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -40,6 +40,19 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6, label, p, span, .stMarkdown {
         color: #f8fafc !important;
     }
+    
+    /* Estilização da Logo da Marca */
+    .brand-header {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.2rem;
+    }
+    .brand-risco { color: #ffffff !important; }
+    .brand-ag { color: #10b981 !important; }
+    .brand-pipe { color: #ffffff !important; margin: 0 8px; }
+    .brand-fbc { color: #be123c !important; }
+
     code {
         background-color: transparent !important;
         color: #f8fafc !important;
@@ -118,16 +131,6 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     
     styles = getSampleStyleSheet()
     
-    style_title = ParagraphStyle(
-        'DocTitle',
-        parent=styles['Heading1'],
-        fontName='Helvetica-Bold',
-        fontSize=18,
-        leading=22,
-        textColor=colors.HexColor('#0f172a'),
-        spaceAfter=4
-    )
-    
     style_subtitle = ParagraphStyle(
         'DocSubtitle',
         parent=styles['Normal'],
@@ -142,8 +145,8 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'SectionHeader',
         parent=styles['Heading2'],
         fontName='Helvetica-Bold',
-        fontSize=13,
-        leading=16,
+        fontSize=12,
+        leading=15,
         textColor=colors.HexColor('#1e3a8a'),
         spaceBefore=12,
         spaceAfter=6
@@ -153,20 +156,23 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'BodyTextCustom',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=10,
-        leading=14,
+        fontSize=9.5,
+        leading=13.5,
         textColor=colors.HexColor('#1e293b'),
         spaceAfter=6
     )
 
     story = []
     
-    # Cabeçalho do PDF
-    story.append(Paragraph("RISCO AG / FBC — RELATÓRIO DE CRÉDITO E AUDITORIA", style_title))
-    story.append(Paragraph(f"Documento Base: {nome_arquivo_original} | Emissão do Parecer", style_subtitle))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=15))
+    # Cabeçalho estilizado do PDF com as cores da marca
+    header_html = '<font color="#0f172a"><b>Risco</b></font> <font color="#10b981"><b>AG</b></font> <font color="#64748b">|</font> <font color="#be123c"><b>FBC</b></font> <font size="12" color="#334155"> — Parecer de Crédito & Rating</font>'
+    style_pdf_header = ParagraphStyle('PDFHeader', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, leading=22, spaceAfter=4)
     
-    # Processa linhas de Markdown para converter em tags suportadas pelo ReportLab
+    story.append(Paragraph(header_html, style_pdf_header))
+    story.append(Paragraph(f"Documento Auditado: {nome_arquivo_original} | Avaliação de Risco de Crédito", style_subtitle))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=12))
+    
+    # Processa linhas de Markdown para converter em tags do ReportLab
     linhas = texto_relatorio.split('\n')
     for linha in linhas:
         linha_limpa = linha.strip()
@@ -174,7 +180,6 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
             story.append(Spacer(1, 4))
             continue
             
-        # Converte negrito em Markdown (**texto**) para <b>texto</b>
         linha_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linha_limpa)
         
         if linha_limpa.startswith('# ') or linha_limpa.startswith('## ') or linha_limpa.startswith('### '):
@@ -193,8 +198,8 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
-# Cabeçalho
-st.title("RISCO AG / FBC")
+# Cabeçalho com Logo Colorida
+st.markdown('<div class="brand-header"><span class="brand-risco">Risco</span><span class="brand-ag">AG</span><span class="brand-pipe">|</span><span class="brand-fbc">FBC</span></div>', unsafe_allow_html=True)
 st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
 
 st.markdown("---")
@@ -235,6 +240,10 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
      b) Operações de Renegociação de Dívida / Financiamento sem Barter: Exigir obrigatoriamente CPR Física ou CPR Financeira acompanhada de Alienação Fiduciária de Imóvel Rural isento de ônus e/ou Alienação Fiduciária de Produto Agrícola.
      c) Liquidação da Operação / Trava de Recebimento: Requerer a cessão de crédito estruturada com notificação e aceite de Trading de primeira linha (ex: Bunge, Cargill, ADM, LDC, Amaggi).
 
+4. NOTA DE ISENÇÃO DE RESPONSABILIDADE E CONFORMIDADE ÉTICA (OBRIGATÓRIO NO FINAL DO PARECER):
+   Insira obrigatoriamente a seguinte ressalva ao final de todo diagnóstico gerado:
+   "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
+
 REGRA DE FORMATAÇÃO:
 - Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
@@ -266,7 +275,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, recomendando as garantias adequadas (Barter vs. Renegociação/Crédito Financeiro) conforme as instruções do sistema.",
+                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, incluindo a nota final de conformidade ética e validação pelo jurídico do consulente.",
                         ],
                         config=config,
                     )
