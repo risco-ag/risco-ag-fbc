@@ -51,7 +51,7 @@ st.markdown("""
     .brand-risco { color: #ffffff !important; }
     .brand-ag { color: #10b981 !important; }
     .brand-pipe { color: #ffffff !important; margin: 0 8px; }
-    .brand-fbc { color: #be123c !important; }
+    .brand-fbc { color: #e2e8f0 !important; }
 
     code {
         background-color: transparent !important;
@@ -164,8 +164,8 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 
     story = []
     
-    # Cabeçalho estilizado do PDF com as cores da marca
-    header_html = '<font color="#0f172a"><b>Risco</b></font> <font color="#10b981"><b>AG</b></font> <font color="#64748b">|</font> <font color="#be123c"><b>FBC</b></font> <font size="12" color="#334155"> — Parecer de Crédito & Rating</font>'
+    # Cabeçalho estilizado do PDF com FBC em cinza claro
+    header_html = '<font color="#0f172a"><b>Risco</b></font> <font color="#10b981"><b>AG</b></font> <font color="#64748b">|</font> <font color="#475569"><b>FBC</b></font> <font size="12" color="#334155"> — Parecer de Crédito & Rating</font>'
     style_pdf_header = ParagraphStyle('PDFHeader', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=18, leading=22, spaceAfter=4)
     
     story.append(Paragraph(header_html, style_pdf_header))
@@ -198,7 +198,7 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
 # Obtém a chave configurada nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
-# Cabeçalho com Logo Colorida
+# Cabeçalho com Logo Ajustada (FBC em cinza claro)
 st.markdown('<div class="brand-header"><span class="brand-risco">Risco</span><span class="brand-ag">AG</span><span class="brand-pipe">|</span><span class="brand-fbc">FBC</span></div>', unsafe_allow_html=True)
 st.caption("Motor de Decisão, Auditoria do Passivo Judicial e Rating de Crédito Agrícola")
 
