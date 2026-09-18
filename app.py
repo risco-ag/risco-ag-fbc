@@ -117,6 +117,16 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Função para sanitizar e aplicar R$ obrigatoriamente a qualquer valor monetário
+def sanitizar_moeda(texto):
+    if not texto:
+        return texto
+    # Garante que qualquer "R" isolado antes de um número (com espaço ou sem) vire "R$ "
+    texto = re.sub(r'\bR\s*(\d)', r'R$ \1', texto)
+    # Garante que "R$" não tenha múltiplos espaços extras
+    texto = re.sub(r'R\$\s*', r'R$ ', texto)
+    return texto
+
 # Função para gerar o arquivo PDF estilizado em memória
 def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     buffer = io.BytesIO()
@@ -248,8 +258,8 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
    Insira obrigatoriamente a seguinte ressalva ao final de todo diagnóstico gerado:
    "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
 
-REGRA DE FORMATAÇÃO:
-- Escreva todos os valores monetários estritamente no formato R$ 0,00 (ex: R$ 130.958,18). NUNCA omita o símbolo do cifrão ($).
+REGRA RIGOROSA DE FORMATAÇÃO:
+- Escreva TODOS os valores monetários com o prefixo R$ obrigatório (exemplo: R$ 130.958,18 e R$ 500.000,00). NUNCA omita o cifrão.
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
@@ -290,9 +300,8 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Tratamento robusto para garantir que qualquer "R " seguido de número vire "R$ "
-                        texto_formatado = response.text
-                        texto_formatado = re.sub(r'\b(R)\s+(?=\d)', r'R$', texto_formatado)
+                        # Processamento pós-geração para garantir a formatação monetária R$ em todo o texto
+                        texto_formatado = sanitizar_moeda(response.text)
                         
                         # Exibe a análise na tela
                         st.markdown(texto_formatado)
