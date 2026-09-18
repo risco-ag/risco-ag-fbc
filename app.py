@@ -121,11 +121,10 @@ st.markdown("""
 def sanitizar_moeda(texto):
     if not texto:
         return texto
-    # Garante que 'R ' ou 'R' seguido de número (com ou sem espaço) vire 'R$ '
-    texto = re.sub(r'\bR\s*(\d)', r'R$ \1', texto)
-    # Garante que 'R ' seguido de número formatado vire 'R$ '
-    texto = re.sub(r'\bR\s+(?=\d)', r'R$ ', texto)
-    # Remove duplicações acidentais como R$ $texto = re.sub(r'R\$\s*\$?', r'R$ ', texto)
+    # Trata qualquer variação de "R " ou "R" isolado antes de números, inclusive dentro de parênteses "(R 100)"
+    texto = re.sub(r'R\s+(\d)', r'R$ \1', texto)
+    texto = re.sub(r'(?<=\(|\s|^)R\s+(?=\d)', r'R$ ', texto)
+    texto = re.sub(r'R\$\s*\$?', r'R$ ', texto)
     return texto
 
 # Função para gerar o arquivo PDF estilizado em memória
@@ -260,7 +259,7 @@ AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTI
    "DISCLAIMER INSTITUCIONAL: Este parecer constitui uma análise técnica instrumental de apoio à tomada de decisão de risco e concessão de crédito agrícola. As conclusões e recomendações de garantia fornecidas não substituem a análise e validação jurídica formal da operação. Recomendamos expressamente que o Departamento Jurídico interno ou a assessoria jurídica externa do consulente seja consultada para validação dos instrumentos contratuais, minutas e viabilidade de registro das garantias propostas."
 
 REGRA RIGOROSA DE FORMATAÇÃO:
-- Escreva TODOS os valores monetários com o prefixo R$ obrigatório (exemplo: R$ 130.958,18 e R$ 500.000,00). NUNCA omita o cifrão.
+- Escreva TODOS os valores monetários estritamente no formato R$ 0,00 (exemplo: R$ 130.958,18 e R$ 500.000,00). Jamais omita o símbolo $.
 - NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
 """
 
