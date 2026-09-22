@@ -20,7 +20,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para interface limpa e profissional
+# Estilização CSS para interface escura e limpa
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -101,8 +101,6 @@ st.markdown("""
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
     }
-    
-    /* Estilização dos campos de input de Login */
     div[data-baseweb="input"] {
         background-color: #1e293b !important;
         border-color: #334155 !important;
@@ -112,10 +110,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# SISTEMA DE AUTENTICAÇÃO POR LOGIN E SENHA
+# AUTENTICAÇÃO POR LOGIN E SENHA
 # -----------------------------------------------------------------------------
 def check_password():
-    """Retorna True se o usuário digitou o login e senha corretos."""
     def password_entered():
         users = st.secrets.get("passwords", {})
         username = st.session_state.get("username", "").strip()
@@ -123,13 +120,12 @@ def check_password():
 
         if username in users and users[username] == password:
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Não armazena a senha na sessão
+            del st.session_state["password"]
             del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        # Exibe a tela de login na primeira visita
         col_a, col_b, col_c = st.columns([3, 4, 3])
         with col_b:
             st.title("🔒 Acesso Restrito")
@@ -141,7 +137,6 @@ def check_password():
         return False
 
     elif not st.session_state["password_correct"]:
-        # Exibe mensagem de erro e reapresenta o formulário
         col_a, col_b, col_c = st.columns([3, 4, 3])
         with col_b:
             st.title("🔒 Acesso Restrito")
@@ -155,15 +150,12 @@ def check_password():
     else:
         return True
 
-# Bloqueia a execução do aplicativo até que a senha seja validada
 if not check_password():
     st.stop()
 
 # -----------------------------------------------------------------------------
-# APLICAÇÃO PRINCIPAL (EXIBIDA APÓS O LOGIN BEM-SUCEDIDO)
+# GERADOR DE PDF DO PARECER
 # -----------------------------------------------------------------------------
-
-# Função para gerar o arquivo PDF estilizado em memória
 def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -181,8 +173,8 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=18,
-        leading=22,
+        fontSize=16,
+        leading=20,
         textColor=colors.HexColor('#0f172a'),
         spaceAfter=4
     )
@@ -191,46 +183,44 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
         'DocSubtitle',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=10,
+        fontSize=9,
         leading=12,
         textColor=colors.HexColor('#475569'),
-        spaceAfter=15
+        spaceAfter=12
     )
     
     style_heading = ParagraphStyle(
         'SectionHeader',
         parent=styles['Heading2'],
         fontName='Helvetica-Bold',
-        fontSize=13,
-        leading=16,
+        fontSize=12,
+        leading=15,
         textColor=colors.HexColor('#1e3a8a'),
-        spaceBefore=12,
-        spaceAfter=6
+        spaceBefore=10,
+        spaceAfter=5
     )
     
     style_body = ParagraphStyle(
         'BodyTextCustom',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=10,
-        leading=14,
+        fontSize=9.5,
+        leading=13.5,
         textColor=colors.HexColor('#1e293b'),
-        spaceAfter=6
+        spaceAfter=5
     )
 
     story = []
     
-    # Cabeçalho do PDF
-    story.append(Paragraph("RISCO AG / FBC — RELATÓRIO DE CRÉDITO E AUDITORIA", style_title))
-    story.append(Paragraph(f"Documento Base: {nome_arquivo_original} | Emissão do Parecer", style_subtitle))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=15))
+    story.append(Paragraph("RISCO AG / FBC — PARECER DE CRÉDITO & RATING JURÍDICO", style_title))
+    story.append(Paragraph(f"Documento Auditado: {nome_arquivo_original} | Relatório de Subscrição de Risco", style_subtitle))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=12))
     
-    # Processa linhas de Markdown para converter em tags suportadas pelo ReportLab
     linhas = texto_relatorio.split('\n')
     for linha in linhas:
         linha_limpa = linha.strip()
         if not linha_limpa:
-            story.append(Spacer(1, 4))
+            story.append(Spacer(1, 3))
             continue
             
         linha_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linha_limpa)
@@ -248,10 +238,10 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     buffer.seek(0)
     return buffer.getvalue()
 
-# Obtém a chave configurada nos Secrets
+# Obtém a chave da API nos Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "")).strip()
 
-# Cabeçalho e botão de sair
+# Cabeçalho
 col_tit, col_logout = st.columns([9, 1])
 with col_tit:
     st.title("RISCO AG / FBC")
@@ -273,36 +263,51 @@ with col_left:
     
     btn_processar = st.button("Gerar Rating e Diagnóstico", disabled=(uploaded_file is None))
 
+# SYSTEM INSTRUCTION INTEGRANDO A BASE DA PLANILHA MANUAL
 SYSTEM_INSTRUCTION = """
-Você é um Comitê de Risco de Crédito e Inteligência de Concessão especializado em Agronegócio. Sua função é auditar o passivo judicial exposto no processo analisado sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para uma futura operação de financiamento, fomento ou renegociação de dívida do tomador avaliado.
+Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para concessão de limites, financiamentos ou renegociação no agronegócio.
 
-Você NÃO é o advogado das partes no processo. Portanto, NUNCA dê sugestões de estratégia de cobrança, execução, penhora judicial ou medidas processuais contra o réu.
+Você NÃO é o advogado das partes. NUNCA sugira estratégias de cobrança ou execução contra o réu. Sua missão é proteger a carteira de crédito da consulente contra o risco de default, estipulando a alçada, o rating, a matriz de garantias, o protocolo de campo e os filtros ESG.
 
-Sua análise deve responder prioritariamente: "Qual o impacto deste processo no risco de crédito do tomador e sob quais estruturas e garantias ele pode ser financiado ou renegociado?"
+ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
 
-AO ANALISAR OS AUTOS, OBEDEÇA RIGOROSAMENTE À SEGUINTE ESTRUTURA DE DIAGNÓSTICO:
+1. DADOS DE IDENTIFICAÇÃO, POLO E MATERIALIDADE (BASE PLANILHA)
+   - Identificação das Partes, Juízo, Classe e Origem da Dívida.
+   - Polo do Tomador: Identificar se o tomador é Devedor Principal ou Coobrigado/Avalista/Fiador de terceiros.
+   - Exposição Financeira e IMR (Índice de Materialidade de Risco):
+     * Saldo Devedor Atualizado x Exposição Estimada da Safra.
+     * Faixa de Comprometimento: Baixa (<5%), Média (5%-15%), Alta (15%-30%) ou Crítica (>30%).
 
-1. DADOS DE IDENTIFICAÇÃO E MATERIALIDADE
-   - Identificação das Partes e Juízo.
-   - Classe Processual e Origem do Débito.
-   - Valor do Passivo Judicial Atualizado e Materialidade da Exposição.
+2. DETECÇÃO DE AUTOS CONEXOS E ALERTA DE UPLOAD
+   - Identifique menções a Agravos com Efeito Suspensivo, Embargos à Execução em autos apartados, Ações Anulatórias, Tutelas Cautelares ou Processos Apensos.
+   - REGRA DE UPLOAD: Se houver processo conexo relevante, insira: "⚠️ AVISO DE CONEXÃO PROCESSUAL: Recomenda-se o upload imediato dos autos conexos (Recurso/Embargos/Apensos) para análise de mérito cruzada."
 
-2. AVALIAÇÃO DE EXPOSIÇÃO E SENSIBILIDADE OPERACIONAL
-   - Risco de Constrição Imediata: Avaliar o risco real de o tomador sofrer bloqueio de contas (SISBAJUD), retenção de grãos ou arresto durante a vigência do novo crédito.
-   - Comportamento de Defesa: Avaliar se o devedor demonstrou inércia/revelia ou se há teses defensivas relevantes.
+3. QUALIFICAÇÃO DA MEDIDA CONSTRITIVA E COMPORTAMENTO PROCESSUAL
+   - Status do Provimento: Verificar se há liminares de arresto, busca e apreensão de grãos, penhora online (SISBAJUD Teimosinha) ou arresto de safra DEFERIDAS (risco iminente) ou apenas PENDENTES.
+   - Comportamento de Defesa: Mapear inércia/revelia, embargos protelatórios, alegação de impenhorabilidade ou descumprimento de acordos.
 
-3. PARECER DO COMITÊ DE CRÉDITO E RECOMENDAÇÃO DE CONCESSÃO
-   - Diagnóstico Final de Rating de Crédito (Ex: Risco Baixo, Moderado, Alto ou Crítico).
-   - Recomendação Final de Financiamento: (Aprovado / Aprovado com Condicionantes / Desfavorável).
-   - ESTRUTURAÇÃO DE GARANTIAS E CONDICIONANTES DA OPERAÇÃO:
-     Aplique estritamente as diretrizes de garantia da política de crédito:
-     a) Operações de Barter (Permuta/Troca de Insumos por Grãos): Exigir obrigatoriamente CPR Física com Penhor Agrícola registrado sobre a safra futura.
-     b) Operações de Renegociação de Dívida / Financiamento sem Barter: Exigir obrigatoriamente CPR Física ou CPR Financeira acompanhada de Alienação Fiduciária de Imóvel Rural isento de ônus e/ou Alienação Fiduciária de Produto Agrícola.
-     c) Liquidação da Operação / Trava de Recebimento: Requerer a cessão de crédito estruturada com notificação e aceite de Trading de primeira linha (ex: Bunge, Cargill, ADM, LDC, Amaggi).
+4. FILTRO RÍGIDO ESG, SELO MAPA E RISCO REPUTACIONAL / IMAGEM
+   - VETO AUTOMÁTICO (REPROVAÇÃO INCONDICIONAL): Presença em "Lista Suja" de Trabalho Escravo/Análogo, Trabalho Infantil ou sobreposição com Terras Indígenas/Quilombolas/Unidades de Conservação (Ação Civil Pública).
+   - CONDICIONANTES ESG: Para embargos ambientais (IBAMA/CAR), exigir delimitação da área financiada fora do polígono embargado, preservação do Selo MAPA de rastreabilidade e cláusula de vencimento antecipado por infração ambiental.
 
-REGRA DE FORMATAÇÃO:
-- Escreva todos os valores estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
-- NUNCA utilize crases (` `) para destacar valores, números, IDs ou datas.
+5. PARECER FINAL DO COMITÊ DE CRÉDITO E MATRIZ DE RECOMENDAÇÃO
+   - Rating Integrado: (Mínimo / Baixo / Moderado / Alto / Crítico).
+   - Recomendação de Limite: (Aprovado / Aprovado com Condicionantes / Reprovado).
+   - MATRIZ DE GARANTIAS CUMULATIVAS (Aplica-se em caso de aprovação):
+     a) Risco Crítico / Alto (Se o Comitê aprovar contra a recomendação nativa): EXIGIR PELO MENOS 3 GARANTIAS SIMULTÂNEAS: [1] CPR Financeira/Física com Alienação Fiduciária de Imóvel Rural limpo ou Produto; [2] Cessão de Crédito formalizada com notificação e aceite de Trading de 1ª Linha (Bunge, Cargill, ADM, LDC, Amaggi); [3] Aval Cruzado Obrigatório de TODOS que produzem ou exploram a área.
+     b) Risco Moderado / Médio: EXIGIR PELO MENOS 2 DAS GARANTIAS ACIMA.
+     c) Risco Baixo / Seguro: EXIGIR PELO MENOS 1 DAS GARANTIAS PRINCIPAIS.
+   - PROTOCOLO DE MONITORAMENTO DE LAVOURA (CAMPO):
+     a) Risco Crítico / Alto: Monitoramento Terceirizado 24h na lavoura e embarque.
+     b) Risco Moderado / Médio: Monitoramento Terceirizado 48h em fases críticas (plantio/colheita).
+     c) Risco Baixo / Seguro: Monitoramento/Visita Semanal pelo Consultor Comercial.
+
+6. RECOMENDAÇÃO DE ANÁLISE CONJUNTA MULTI-VETORIAL (OBRIGATÓRIA)
+   - Inserir o alerta: "Independente do Rating Jurídico apontado, este parecer DEVE ser analisado conjuntamente com as análises apartadas de: [1] Capacidade Financeira e Fluxo de Caixa da Safra; [2] Endividamento Bancário e Cetes (SCR/BACEN); [3] Alavancagem e Custo Operacional por Hectare; [4] Dossiê Socioambiental e Rastreabilidade de Grãos."
+
+REGRA DE FORMATAÇÃO MONETÁRIA:
+- Escreva todos os valores financeiros estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
+- NUNCA utilize crases (` `) nem formatação em bloco de código para valores, datas ou números.
 """
 
 with col_right:
@@ -316,7 +321,7 @@ with col_right:
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner("Analisando autos sob a ótica de Risco e Concessão de Crédito..."):
+            with st.spinner("Analisando autos com a matriz completa do Rating Jurídico..."):
                 try:
                     client = genai.Client(api_key=api_key)
                     
@@ -331,7 +336,7 @@ with col_right:
                         model="gemini-3.6-flash",
                         contents=[
                             arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Decisão de Concessão de Crédito deste tomador com base nos autos, recomendando as garantias adequadas (Barter vs. Renegociação/Crédito Financeiro) conforme as instruções do sistema.",
+                            "Realize o diagnóstico completo de Risco e Concessão de Crédito deste tomador aplicando a matriz completa do Rating Jurídico (polo processual, IMR, status de liminares, garantias cumulativas, monitoramento de campo, ESG e análise multi-vetorial).",
                         ],
                         config=config,
                     )
@@ -342,14 +347,12 @@ with col_right:
                     if response and response.text:
                         st.success("Análise de Concessão de Crédito concluída com sucesso!")
                         
-                        # Formatação para exibição limpa dos valores
                         texto_formatado = response.text
                         texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
                         texto_formatado = re.sub(r'R\$\s*', r'R$ ', texto_formatado)
                         
                         st.markdown(texto_formatado)
                         
-                        # Gera o PDF em memória para download
                         pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
                         
                         st.markdown("---")
