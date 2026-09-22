@@ -258,46 +258,46 @@ st.markdown("---")
 col_left, col_right = st.columns([4, 8])
 
 with col_left:
-    st.subheader("Envio de Processos & Conexos")
+    st.subheader("Envio de Processos (Múltiplos PDFs)")
     uploaded_files = st.file_uploader(
-        "Arraste ou selecione um ou mais PDFs dos autos (Processo Principal, Recursos, Embargos, etc.):",
+        "Arraste ou selecione um ou mais PDFs dos autos (Cível, Trabalhista, Criminal, Ambiental, etc.):",
         type=["pdf"],
         accept_multiple_files=True
     )
     
     btn_processar = st.button("Gerar Rating e Diagnóstico Integrado", disabled=(not uploaded_files))
 
-# SYSTEM INSTRUCTION COM SUPORTE A MÚLTIPLOS PROCESSOS CONEXOS
+# SYSTEM INSTRUCTION COM REGRA DE ANÁLISE INDIVIDUALIZADA + CONSOLIDADA
 SYSTEM_INSTRUCTION = """
-Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais fornecidos (que podem abranger um ou múltiplos processos/recursos conexos) sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para concessão de limites, financiamentos ou renegociação no agronegócio.
-
-Caso sejam enviados 2 ou mais arquivos PDF, você DEVE realizar a ANÁLISE CRUZADA DE MÉRITO entre o processo principal e seus apensos/recursos (ex: verificar se um Agravo de Instrumento suspendeu a liminar deferida no processo principal).
+Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais fornecidos — que podem abranger um ou múltiplos processos/recursos de naturezas distintas (Cível, Trabalhista, Criminal, Ambiental, etc.) contra o mesmo tomador — sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO.
 
 Você NÃO é o advogado das partes. NUNCA sugira estratégias de cobrança ou execução contra o réu. Sua missão é proteger a carteira de crédito da consulente contra o risco de default, estipulando a alçada, o rating, a matriz de garantias, o protocolo de campo e os filtros ESG.
 
+DIRETRIZ DE ANÁLISE PARA MÚLTIPLOS PROCESSOS (AÇÕES HETEROGÊNEAS):
+Caso sejam enviados 2 ou mais arquivos PDF (mesmo de naturezas distintas sem relação direta entre si), você DEVE:
+1. Apresentar primeiro a ANÁLISE INDIVIDUALIZADA de cada processo enviada.
+2. Apresentar em seguida o PARECER ESTRATÉGICO CONSOLIDADO, somando a exposição financeira total, mapeando o pico de risco reputacional/ESG e emitindo a decisão final do Comitê.
+
 ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
 
-1. DADOS DE IDENTIFICAÇÃO, POLO E MATERIALIDADE (ANÁLISE INTEGRADA)
-   - Identificação das Partes, Juízos, Classes e Origem da Dívida dos autos analisados.
-   - Polo do Tomador: Identificar se o tomador é Devedor Principal ou Coobrigado/Avalista/Fiador de terceiros.
-   - Exposição Financeira e IMR (Índice de Materialidade de Risco):
-     * Saldo Devedor Consolidado Atualizado x Exposição Estimada da Safra.
-     * Faixa de Comprometimento: Baixa (<5%), Média (5%-15%), Alta (15%-30%) ou Crítica (>30%).
+1. DIAGNÓSTICO INDIVIDUALIZADO DOS PROCESSOS ENVIADOS
+   Para cada PDF enviado, apresente um resumo cirúrgico contendo:
+   - Identificação do Processo, Juízo, Classe e Natureza (Cível, Trabalhista, Criminal, Ambiental).
+   - Polo do Tomador (Devedor Principal vs. Coobrigado/Avalista).
+   - Valor do Passivo Judicial e Status das Liminares (Deferida com Ordem de Bloqueio/Arresto vs. Pendente).
+   - Risco Específico Identificado (ex: risco de SISBAJUD no cível, risco de penhora de contas no trabalhista, risco reputacional no criminal, risco de embargo/perda de Selo MAPA no ambiental).
 
-2. SÍNTESE DA ANÁLISE CRUZADA DE PROCESSOS CONEXOS / RECURSOS
-   - Descreva a interrelação entre os PDFs enviados (ex: Processo de Execução + Embargos do Devedor + Agravo com Efeito Suspensivo).
-   - Se houver citação de outros processos pendentes que NÃO foram anexados, insira o aviso: "⚠️ PENDÊNCIA DOCUMENTAL: Recomenda-se o upload dos autos conexos [Nome do Processo/Recurso citado] para auditoria complementar."
+2. SÍNTESE DA EXPOSIÇÃO CONSOLIDADA E IMR GLOBAL
+   - Passivo Judicial Total Consolidado (Soma de todos os processos).
+   - IMR Global (Índice de Materialidade de Risco) x Exposição Estimada da Safra. Faixa: Baixa (<5%), Média (5%-15%), Alta (15%-30%) ou Crítica (>30%).
+   - Detecção de Conexos Ausentes: Se algum processo citar outros autos/recursos relevantes não anexados, insira: "⚠️ PENDÊNCIA DOCUMENTAL: Recomenda-se o upload dos autos conexos [Nome do Processo] para auditoria complementar."
 
-3. QUALIFICAÇÃO DA MEDIDA CONSTRITIVA E COMPORTAMENTO PROCESSUAL
-   - Status do Provimento Atualizado: Verificar se há liminares de arresto, busca e apreensão de grãos, penhora online (SISBAJUD Teimosinha) ou arresto de safra VIGENTES/DEFERIDAS ou se foram SUSPENSAS por recurso.
-   - Comportamento de Defesa: Mapear inércia/revelia, embargos protelatórios, alegação de impenhorabilidade ou descumprimento de acordos.
+3. FILTRO RÍGIDO ESG, SELO MAPA E RISCO REPUTACIONAL / IMAGEM (CONSOLIDADO)
+   - VETO AUTOMÁTICO (REPROVAÇÃO INCONDICIONAL): Se em qualquer dos processos constar Trabalho Escravo/Análogo, Trabalho Infantil ou Invasão de Terras Indígenas/Quilombolas/Unidades de Conservação ("Lista Suja" ou Ação Civil Pública).
+   - CONDICIONANTES ESG: Para embargos ambientais (IBAMA/CAR), exigir delimitação da área financiada fora do polígono embargado, preservação do Selo MAPA e cláusula de vencimento antecipado por infração ambiental.
 
-4. FILTRO RÍGIDO ESG, SELO MAPA E RISCO REPUTACIONAL / IMAGEM
-   - VETO AUTOMÁTICO (REPROVAÇÃO INCONDICIONAL): Presença em "Lista Suja" de Trabalho Escravo/Análogo, Trabalho Infantil ou sobreposição com Terras Indígenas/Quilombolas/Unidades de Conservação (Ação Civil Pública).
-   - CONDICIONANTES ESG: Para embargos ambientais (IBAMA/CAR), exigir delimitação da área financiada fora do polígono embargado, preservação do Selo MAPA de rastreabilidade e cláusula de vencimento antecipado por infração ambiental.
-
-5. PARECER FINAL DO COMITÊ DE CRÉDITO E MATRIZ DE RECOMENDAÇÃO
-   - Rating Integrado: (Mínimo / Baixo / Moderado / Alto / Crítico).
+4. PARECER FINAL DO COMITÊ DE CRÉDITO E MATRIZ DE RECOMENDAÇÃO (INTEGRADO)
+   - Rating Integrado Global: Calibrado pelo maior nível de risco do conjunto (Mínimo / Baixo / Moderado / Alto / Crítico).
    - Recomendação de Limite: (Aprovado / Aprovado com Condicionantes / Reprovado).
    - MATRIZ DE GARANTIAS CUMULATIVAS (Aplica-se em caso de aprovação):
      a) Risco Crítico / Alto (Se o Comitê aprovar contra a recomendação nativa): EXIGIR PELO MENOS 3 GARANTIAS SIMULTÂNEAS: [1] CPR Financeira/Física com Alienação Fiduciária de Imóvel Rural limpo ou Produto; [2] Cessão de Crédito formalizada com notificação e aceite de Trading de 1ª Linha (Bunge, Cargill, ADM, LDC, Amaggi); [3] Aval Cruzado Obrigatório de TODOS que produzem ou exploram a área.
@@ -308,7 +308,7 @@ ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
      b) Risco Moderado / Médio: Monitoramento Terceirizado 48h em fases críticas (plantio/colheita).
      c) Risco Baixo / Seguro: Monitoramento/Visita Semanal pelo Consultor Comercial.
 
-6. RECOMENDAÇÃO DE ANÁLISE CONJUNTA MULTI-VETORIAL (OBRIGATÓRIA)
+5. RECOMENDAÇÃO DE ANÁLISE CONJUNTA MULTI-VETORIAL (OBRIGATÓRIA)
    - Inserir o alerta: "Independente do Rating Jurídico apontado, este parecer DEVE ser analisado conjuntamente com as análises apartadas de: [1] Capacidade Financeira e Fluxo de Caixa da Safra; [2] Endividamento Bancário e Cetes (SCR/BACEN); [3] Alavancagem e Custo Operacional por Hectare; [4] Dossiê Socioambiental e Rastreabilidade de Grãos."
 
 REGRA DE FORMATAÇÃO MONETÁRIA:
@@ -330,21 +330,19 @@ with col_right:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) para análise cruzada via Gemini 3.6 Flash..."):
+                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) para análise individualizada e consolidada via Gemini 3.6 Flash..."):
                     for file in uploaded_files:
                         temp_path = f"temp_{file.name}"
                         with open(temp_path, "wb") as f:
                             f.write(file.getbuffer())
                         temp_paths.append(temp_path)
                         
-                        # Upload individual de cada arquivo para a API
                         arq_uploaded = client.files.upload(file=temp_path)
                         arquivos_gemini.append(arq_uploaded)
 
-                    # Monta o conteúdo combinando todos os PDFs e a instrução
                     contents_payload = list(arquivos_gemini)
                     contents_payload.append(
-                        "Realize o diagnóstico integrado de Risco e Concessão de Crédito deste tomador cruzando as informações de todos os arquivos enviados (processo principal, recursos e apensos). Aplique estritamente a matriz do Rating Jurídico."
+                        "Realize o diagnóstico completo deste tomador. Se houver 2 ou mais arquivos, apresente primeiro a análise individualizada de cada processo (Cível, Trabalhista, Criminal, Ambiental) e, em seguida, o parecer estratégico consolidado conforme as instruções do sistema."
                     )
                     
                     config = types.GenerateContentConfig(
@@ -358,11 +356,9 @@ with col_right:
                         config=config,
                     )
                     
-                    # Limpeza dos arquivos temporários na API do Gemini
                     for arq in arquivos_gemini:
                         client.files.delete(name=arq.name)
                         
-                    # Limpeza dos arquivos locais
                     for tp in temp_paths:
                         if os.path.exists(tp):
                             os.remove(tp)
