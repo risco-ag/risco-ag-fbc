@@ -258,7 +258,7 @@ st.markdown("---")
 col_left, col_right = st.columns([4, 8])
 
 with col_left:
-    st.subheader("Envio de Processos (Múltiplos PDFs)")
+    st.subheader("Envio de Processos (1 ou múltiplos PDFs)")
     uploaded_files = st.file_uploader(
         "Arraste ou selecione um ou mais PDFs dos autos (Cível, Trabalhista, Criminal, Ambiental, etc.):",
         type=["pdf"],
@@ -267,16 +267,15 @@ with col_left:
     
     btn_processar = st.button("Gerar Rating e Diagnóstico Integrado", disabled=(not uploaded_files))
 
-# SYSTEM INSTRUCTION COM REGRA DE ANÁLISE INDIVIDUALIZADA + CONSOLIDADA
+# SYSTEM INSTRUCTION
 SYSTEM_INSTRUCTION = """
 Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais fornecidos — que podem abranger um ou múltiplos processos/recursos de naturezas distintas (Cível, Trabalhista, Criminal, Ambiental, etc.) contra o mesmo tomador — sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO.
 
 Você NÃO é o advogado das partes. NUNCA sugira estratégias de cobrança ou execução contra o réu. Sua missão é proteger a carteira de crédito da consulente contra o risco de default, estipulando a alçada, o rating, a matriz de garantias, o protocolo de campo e os filtros ESG.
 
-DIRETRIZ DE ANÁLISE PARA MÚLTIPLOS PROCESSOS (AÇÕES HETEROGÊNEAS):
-Caso sejam enviados 2 ou mais arquivos PDF (mesmo de naturezas distintas sem relação direta entre si), você DEVE:
-1. Apresentar primeiro a ANÁLISE INDIVIDUALIZADA de cada processo enviada.
-2. Apresentar em seguida o PARECER ESTRATÉGICO CONSOLIDADO, somando a exposição financeira total, mapeando o pico de risco reputacional/ESG e emitindo a decisão final do Comitê.
+DIRETRIZ DE ANÁLISE:
+1. Se enviado 1 único PDF: Apresente a análise completa e individualizada do processo e o parecer final do comitê.
+2. Se enviados 2 ou mais arquivos PDF (mesmo de naturezas distintas): Apresente primeiro a ANÁLISE INDIVIDUALIZADA de cada processo e em seguida o PARECER ESTRATÉGICO CONSOLIDADO.
 
 ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
 
@@ -330,7 +329,7 @@ with col_right:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) para análise individualizada e consolidada via Gemini 3.6 Flash..."):
+                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) via Gemini 3.6 Flash..."):
                     for file in uploaded_files:
                         temp_path = f"temp_{file.name}"
                         with open(temp_path, "wb") as f:
@@ -342,7 +341,7 @@ with col_right:
 
                     contents_payload = list(arquivos_gemini)
                     contents_payload.append(
-                        "Realize o diagnóstico completo deste tomador. Se houver 2 ou mais arquivos, apresente primeiro a análise individualizada de cada processo (Cível, Trabalhista, Criminal, Ambiental) e, em seguida, o parecer estratégico consolidado conforme as instruções do sistema."
+                        "Realize o diagnóstico completo deste tomador. Apresente a análise dos autos e o parecer estratégico conforme as instruções do sistema."
                     )
                     
                     config = types.GenerateContentConfig(
@@ -350,21 +349,36 @@ with col_right:
                         temperature=0.1,
                     )
                     
-                    response = client.models.generate_content(
-                        model="gemini-3.6-flash",
-                        contents=contents_payload,
-                        config=config,
-                    )
+                    # TENTATIVAS AUTOMÁTICAS EM CASO DE OSCILAÇÃO (503 UNAVAILABLE)
+                    response = None
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            response = client.models.generate_content(
+                                model="gemini-3.6-flash",
+                                contents=contents_payload,
+                                config=config,
+                            )
+                            break
+                        except Exception as api_err:
+                            if ("503" in str(api_err) or "UNAVAILABLE" in str(api_err)) and attempt < max_retries - 1:
+                                time.sleep(4 * (attempt + 1))
+                            else:
+                                raise api_err
                     
+                    # LIMPEZA
                     for arq in arquivos_gemini:
-                        client.files.delete(name=arq.name)
+                        try:
+                            client.files.delete(name=arq.name)
+                        except:
+                            pass
                         
                     for tp in temp_paths:
                         if os.path.exists(tp):
                             os.remove(tp)
 
                     if response and response.text:
-                        st.success(f"Análise Integrada de {len(uploaded_files)} arquivo(s) concluída com sucesso!")
+                        st.success(f"Análise de {len(uploaded_files)} arquivo(s) concluída com sucesso!")
                         
                         texto_formatado = response.text
                         texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
@@ -376,7 +390,7 @@ with col_right:
                         
                         st.markdown("---")
                         st.download_button(
-                            label="📥 Baixar Parecer Completo Integrado em PDF",
+                            label="📥 Baixar Parecer Completo em PDF",
                             data=pdf_bytes,
                             file_name=f"Parecer_Credito_Integrado_{len(uploaded_files)}_autos.pdf",
                             mime="application/pdf"
