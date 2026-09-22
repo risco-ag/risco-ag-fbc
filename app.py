@@ -310,6 +310,10 @@ ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
 5. RECOMENDAÇÃO DE ANÁLISE CONJUNTA MULTI-VETORIAL (OBRIGATÓRIA)
    - Inserir o alerta: "Independente do Rating Jurídico apontado, este parecer DEVE ser analisado conjuntamente com as análises apartadas de: [1] Capacidade Financeira e Fluxo de Caixa da Safra; [2] Endividamento Bancário e Cetes (SCR/BACEN); [3] Alavancagem e Custo Operacional por Hectare; [4] Dossiê Socioambiental e Rastreabilidade de Grãos."
 
+6. DISCLAIMER DE ISENÇÃO DE RESPONSABILIDADE E RESALVA LEGAL (OBRIGATÓRIO)
+   - Adicione obrigatoriamente no final do parecer a seguinte nota de governança:
+     "⚠️ DISCLAIMER E RESALVA LEGAL DE GOVERNANÇA: Este parecer de Rating Jurídico e Matriz de Mitigação de Risco é um documento técnico de inteligência de suporte à tomada de decisão de crédito (underwriting), emitido com base estritamente nos dados extraídos dos autos digitais fornecidos no momento do processamento. Este relatório NÃO substitui a análise, parecer conclusivo, validação e formalização pelo Departamento Jurídico interno e/ou pela Assessoria Jurídica externa da instituição consulente, aos quais compete a decisão final de subscrição de risco e validação dos instrumentos contratuais."
+
 REGRA DE FORMATAÇÃO MONETÁRIA:
 - Escreva todos os valores financeiros estritamente no formato R$ 0,00 (ex: R$ 130.958,18).
 - NUNCA utilize crases (` `) nem formatação em bloco de código para valores, datas ou números.
@@ -341,7 +345,7 @@ with col_right:
 
                     contents_payload = list(arquivos_gemini)
                     contents_payload.append(
-                        "Realize o diagnóstico completo deste tomador. Apresente a análise dos autos e o parecer estratégico conforme as instruções do sistema."
+                        "Realize o diagnóstico completo deste tomador. Apresente a análise dos autos, o parecer estratégico e o disclaimer de isenção conforme as instruções do sistema."
                     )
                     
                     config = types.GenerateContentConfig(
