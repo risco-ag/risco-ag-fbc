@@ -156,7 +156,7 @@ if not check_password():
 # -----------------------------------------------------------------------------
 # GERADOR DE PDF DO PARECER
 # -----------------------------------------------------------------------------
-def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
+def gerar_pdf_relatorio(texto_relatorio, nomes_arquivos):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -213,7 +213,7 @@ def gerar_pdf_relatorio(texto_relatorio, nome_arquivo_original):
     story = []
     
     story.append(Paragraph("RISCO AG / FBC — PARECER DE CRÉDITO & RATING JURÍDICO", style_title))
-    story.append(Paragraph(f"Documento Auditado: {nome_arquivo_original} | Relatório de Subscrição de Risco", style_subtitle))
+    story.append(Paragraph(f"Documentos Auditados ({len(nomes_arquivos)} arquivo(s)): {', '.join(nomes_arquivos)}", style_subtitle))
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#10b981'), spaceAfter=12))
     
     linhas = texto_relatorio.split('\n')
@@ -258,32 +258,38 @@ st.markdown("---")
 col_left, col_right = st.columns([4, 8])
 
 with col_left:
-    st.subheader("Envio do Processo")
-    uploaded_file = st.file_uploader("Arraste ou selecione o PDF integral dos autos:", type=["pdf"])
+    st.subheader("Envio de Processos & Conexos")
+    uploaded_files = st.file_uploader(
+        "Arraste ou selecione um ou mais PDFs dos autos (Processo Principal, Recursos, Embargos, etc.):",
+        type=["pdf"],
+        accept_multiple_files=True
+    )
     
-    btn_processar = st.button("Gerar Rating e Diagnóstico", disabled=(uploaded_file is None))
+    btn_processar = st.button("Gerar Rating e Diagnóstico Integrado", disabled=(not uploaded_files))
 
-# SYSTEM INSTRUCTION INTEGRANDO A BASE DA PLANILHA MANUAL
+# SYSTEM INSTRUCTION COM SUPORTE A MÚLTIPLOS PROCESSOS CONEXOS
 SYSTEM_INSTRUCTION = """
-Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para concessão de limites, financiamentos ou renegociação no agronegócio.
+Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Sua função é auditar os autos judiciais fornecidos (que podem abranger um ou múltiplos processos/recursos conexos) sob a ótica EXCLUSIVA de TOMADA DE DECISÃO DE CRÉDITO para concessão de limites, financiamentos ou renegociação no agronegócio.
+
+Caso sejam enviados 2 ou mais arquivos PDF, você DEVE realizar a ANÁLISE CRUZADA DE MÉRITO entre o processo principal e seus apensos/recursos (ex: verificar se um Agravo de Instrumento suspendeu a liminar deferida no processo principal).
 
 Você NÃO é o advogado das partes. NUNCA sugira estratégias de cobrança ou execução contra o réu. Sua missão é proteger a carteira de crédito da consulente contra o risco de default, estipulando a alçada, o rating, a matriz de garantias, o protocolo de campo e os filtros ESG.
 
 ESTRUTURA OBRIGATÓRIA DO RELATÓRIO DE SAÍDA:
 
-1. DADOS DE IDENTIFICAÇÃO, POLO E MATERIALIDADE (BASE PLANILHA)
-   - Identificação das Partes, Juízo, Classe e Origem da Dívida.
+1. DADOS DE IDENTIFICAÇÃO, POLO E MATERIALIDADE (ANÁLISE INTEGRADA)
+   - Identificação das Partes, Juízos, Classes e Origem da Dívida dos autos analisados.
    - Polo do Tomador: Identificar se o tomador é Devedor Principal ou Coobrigado/Avalista/Fiador de terceiros.
    - Exposição Financeira e IMR (Índice de Materialidade de Risco):
-     * Saldo Devedor Atualizado x Exposição Estimada da Safra.
+     * Saldo Devedor Consolidado Atualizado x Exposição Estimada da Safra.
      * Faixa de Comprometimento: Baixa (<5%), Média (5%-15%), Alta (15%-30%) ou Crítica (>30%).
 
-2. DETECÇÃO DE AUTOS CONEXOS E ALERTA DE UPLOAD
-   - Identifique menções a Agravos com Efeito Suspensivo, Embargos à Execução em autos apartados, Ações Anulatórias, Tutelas Cautelares ou Processos Apensos.
-   - REGRA DE UPLOAD: Se houver processo conexo relevante, insira: "⚠️ AVISO DE CONEXÃO PROCESSUAL: Recomenda-se o upload imediato dos autos conexos (Recurso/Embargos/Apensos) para análise de mérito cruzada."
+2. SÍNTESE DA ANÁLISE CRUZADA DE PROCESSOS CONEXOS / RECURSOS
+   - Descreva a interrelação entre os PDFs enviados (ex: Processo de Execução + Embargos do Devedor + Agravo com Efeito Suspensivo).
+   - Se houver citação de outros processos pendentes que NÃO foram anexados, insira o aviso: "⚠️ PENDÊNCIA DOCUMENTAL: Recomenda-se o upload dos autos conexos [Nome do Processo/Recurso citado] para auditoria complementar."
 
 3. QUALIFICAÇÃO DA MEDIDA CONSTRITIVA E COMPORTAMENTO PROCESSUAL
-   - Status do Provimento: Verificar se há liminares de arresto, busca e apreensão de grãos, penhora online (SISBAJUD Teimosinha) ou arresto de safra DEFERIDAS (risco iminente) ou apenas PENDENTES.
+   - Status do Provimento Atualizado: Verificar se há liminares de arresto, busca e apreensão de grãos, penhora online (SISBAJUD Teimosinha) ou arresto de safra VIGENTES/DEFERIDAS ou se foram SUSPENSAS por recurso.
    - Comportamento de Defesa: Mapear inércia/revelia, embargos protelatórios, alegação de impenhorabilidade ou descumprimento de acordos.
 
 4. FILTRO RÍGIDO ESG, SELO MAPA E RISCO REPUTACIONAL / IMAGEM
@@ -311,21 +317,35 @@ REGRA DE FORMATAÇÃO MONETÁRIA:
 """
 
 with col_right:
-    st.subheader("📊 Diagnóstico de Risco & Decisão de Crédito")
+    st.subheader("📊 Diagnóstico Integrado de Risco & Decisão de Crédito")
     
-    if btn_processar and uploaded_file is not None:
+    if btn_processar and uploaded_files:
         if not api_key:
             st.error("Chave de API não configurada. Verifique as 'Secrets' no painel do Streamlit Cloud.")
         else:
-            temp_path = f"temp_{uploaded_file.name}"
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
+            temp_paths = []
+            arquivos_gemini = []
+            nomes_arquivos = [f.name for f in uploaded_files]
+            
+            try:
+                client = genai.Client(api_key=api_key)
+                
+                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) para análise cruzada via Gemini 3.6 Flash..."):
+                    for file in uploaded_files:
+                        temp_path = f"temp_{file.name}"
+                        with open(temp_path, "wb") as f:
+                            f.write(file.getbuffer())
+                        temp_paths.append(temp_path)
+                        
+                        # Upload individual de cada arquivo para a API
+                        arq_uploaded = client.files.upload(file=temp_path)
+                        arquivos_gemini.append(arq_uploaded)
 
-            with st.spinner("Analisando autos com a matriz completa do Rating Jurídico..."):
-                try:
-                    client = genai.Client(api_key=api_key)
-                    
-                    arquivo_processo = client.files.upload(file=temp_path)
+                    # Monta o conteúdo combinando todos os PDFs e a instrução
+                    contents_payload = list(arquivos_gemini)
+                    contents_payload.append(
+                        "Realize o diagnóstico integrado de Risco e Concessão de Crédito deste tomador cruzando as informações de todos os arquivos enviados (processo principal, recursos e apensos). Aplique estritamente a matriz do Rating Jurídico."
+                    )
                     
                     config = types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
@@ -334,18 +354,21 @@ with col_right:
                     
                     response = client.models.generate_content(
                         model="gemini-3.6-flash",
-                        contents=[
-                            arquivo_processo,
-                            "Realize o diagnóstico completo de Risco e Concessão de Crédito deste tomador aplicando a matriz completa do Rating Jurídico (polo processual, IMR, status de liminares, garantias cumulativas, monitoramento de campo, ESG e análise multi-vetorial).",
-                        ],
+                        contents=contents_payload,
                         config=config,
                     )
                     
-                    client.files.delete(name=arquivo_processo.name)
-                    os.remove(temp_path)
-                    
+                    # Limpeza dos arquivos temporários na API do Gemini
+                    for arq in arquivos_gemini:
+                        client.files.delete(name=arq.name)
+                        
+                    # Limpeza dos arquivos locais
+                    for tp in temp_paths:
+                        if os.path.exists(tp):
+                            os.remove(tp)
+
                     if response and response.text:
-                        st.success("Análise de Concessão de Crédito concluída com sucesso!")
+                        st.success(f"Análise Integrada de {len(uploaded_files)} arquivo(s) concluída com sucesso!")
                         
                         texto_formatado = response.text
                         texto_formatado = re.sub(r'R\s+(\d)', r'R$ \1', texto_formatado)
@@ -353,21 +376,27 @@ with col_right:
                         
                         st.markdown(texto_formatado)
                         
-                        pdf_bytes = gerar_pdf_relatorio(texto_formatado, uploaded_file.name)
+                        pdf_bytes = gerar_pdf_relatorio(texto_formatado, nomes_arquivos)
                         
                         st.markdown("---")
                         st.download_button(
-                            label="📥 Baixar Parecer Completo em PDF",
+                            label="📥 Baixar Parecer Completo Integrado em PDF",
                             data=pdf_bytes,
-                            file_name=f"Parecer_Credito_{uploaded_file.name.replace('.pdf', '')}.pdf",
+                            file_name=f"Parecer_Credito_Integrado_{len(uploaded_files)}_autos.pdf",
                             mime="application/pdf"
                         )
                     else:
                         st.error("Não foi possível obter resposta do modelo. Tente novamente.")
-                        
-                except Exception as e:
-                    st.error(f"Erro no processamento: {str(e)}")
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
+
+            except Exception as e:
+                st.error(f"Erro no processamento: {str(e)}")
+                for arq in arquivos_gemini:
+                    try:
+                        client.files.delete(name=arq.name)
+                    except:
+                        pass
+                for tp in temp_paths:
+                    if os.path.exists(tp):
+                        os.remove(tp)
     else:
-        st.info("Aguardando upload de arquivo PDF para gerar o parecer de crédito e a matriz de mitigação.")
+        st.info("Aguardando upload de um ou mais arquivos PDF para gerar o parecer de crédito e a matriz de mitigação.")
