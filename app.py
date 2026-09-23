@@ -262,7 +262,7 @@ with col_left:
     valor_financiado = st.number_input("Valor Solicitado / Financiado (R$):", min_value=0.0, value=0.0, step=50000.0, format="%.2f")
     modalidade = st.selectbox("Modalidade da Operação:", ["Barter (Troca de Insumos por Grãos)", "Dinheiro / Crédito Financeiro"])
     
-    # Parâmetros estruturais fixados internamente (ocultos da interface visual)
+    # Parâmetros estruturais fixados internamente
     prazo_pagamento = "1 ano ou mais (Safra/Entressafra)"
     qtd_parcelas = "12 parcelas ou mais"
     
@@ -281,7 +281,7 @@ Você é o Comitê de Risco de Crédito e Rating Jurídico do RISCO AG / FBC. Su
 
 Você NÃO é o advogado das partes. NUNCA sugira estratégias de cobrança ou execução contra o réu. Sua missão é proteger a carteira de crédito da consulente contra o risco de default, estipulando a alçada, o rating, a matriz de garantias, o protocolo de campo e os filtros ESG.
 
-REGRA DE PROPORCIONALIDADE E EXPOSIÇÃO DO CRÉDITO (EXPOSIÇÃO x PASSO JUDICIAL):
+REGRA DE PROPORCIONALIDADE E EXPOSIÇÃO DO CRÉDITO (EXPOSIÇÃO x PASSIVO JUDICIAL):
 Ao analisar os autos, você DEVE cruzar o VALOR A SER FINANCIADO informado pelo utilizador com o PASSIVO JUDICIAL TOTAL / RISCO DE PERDA DO BEM/PRODUTO:
 1. ALTA EXPOSIÇÃO / RISCO ELEVADO: Quanto mais o Valor a ser Financiado se aproximar ou superar o valor do passivo judicial ou do valor da safra/bens sob risco de arresto, MAIOR SERÁ O GRAU DE RATING/RISCO DA OPERAÇÃO e mais RÍGIDAS SERÃO AS GARANTIAS EXIGIDAS (CPR + Alienação + Trava de Trading + Aval) e o MONITORAMENTO DE CAMPO (24h/48h).
 2. BAIXA EXPOSIÇÃO / MARGEM CONFORTÁVEL: Se o Valor a ser Financiado for significativamente inferior ao valor dos bens/safra ou ao passivo, a operação ganha margem de segurança, permitindo a flexibilização do rating e do pacote de garantias.
@@ -339,7 +339,7 @@ with col_right:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                with st.spinner(f"Enviando e processando {len(uploaded_files)} PDF(s) via Gemini 3.6 Flash..."):
+                with st.spinner(f"Enviando e auditando {len(uploaded_files)} PDF(s) com o Engine Risco AG..."):
                     for file in uploaded_files:
                         temp_path = f"temp_{file.name}"
                         with open(temp_path, "wb") as f:
@@ -351,7 +351,6 @@ with col_right:
 
                     contents_payload = list(arquivos_gemini)
                     
-                    # Monta o prompt dinâmico enviando as variáveis preenchidas
                     prompt_dinamico = f"""
                     DADOS DA OPERAÇÃO INFORMADOS PARA ANÁLISE PROPORCIONAL DE RISCO:
                     - Valor Solicitado / Financiado: R$ {valor_financiado:,.2f}
@@ -369,24 +368,30 @@ with col_right:
                         temperature=0.1,
                     )
                     
-                    # TENTATIVAS AUTOMÁTICAS EM CASO DE OSCILAÇÃO (503 UNAVAILABLE)
+                    # MEQUANISMO DE RESILIÊNCIA E FALLBACK AUTOMÁTICO (RETRIES + FALLBACK MODEL)
                     response = None
-                    max_retries = 3
-                    for attempt in range(max_retries):
-                        try:
-                            response = client.models.generate_content(
-                                model="gemini-3.6-flash",
-                                contents=contents_payload,
-                                config=config,
-                            )
-                            break
-                        except Exception as api_err:
-                            if ("503" in str(api_err) or "UNAVAILABLE" in str(api_err)) and attempt < max_retries - 1:
-                                time.sleep(4 * (attempt + 1))
-                            else:
-                                raise api_err
+                    modelos_para_tentar = ["gemini-3.6-flash", "gemini-2.5-flash"]
                     
-                    # LIMPEZA
+                    for model_name in modelos_para_tentar:
+                        for attempt in range(3):
+                            try:
+                                response = client.models.generate_content(
+                                    model=model_name,
+                                    contents=contents_payload,
+                                    config=config,
+                                )
+                                if response and response.text:
+                                    break
+                            except Exception as api_err:
+                                err_str = str(api_err)
+                                if "503" in err_str or "UNAVAILABLE" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                                    time.sleep(2 * (attempt + 1))
+                                else:
+                                    break
+                        if response and response.text:
+                            break
+                    
+                    # LIMPEZA DOS ARQUIVOS TEMPORÁRIOS
                     for arq in arquivos_gemini:
                         try:
                             client.files.delete(name=arq.name)
@@ -416,7 +421,7 @@ with col_right:
                             mime="application/pdf"
                         )
                     else:
-                        st.error("Não foi possível obter resposta do modelo. Tente novamente.")
+                        st.error("O serviço de IA está temporariamente sobrecarregado. Por favor, clique novamente em 'Gerar Rating e Diagnóstico Integrado'.")
 
             except Exception as e:
                 st.error(f"Erro no processamento: {str(e)}")
