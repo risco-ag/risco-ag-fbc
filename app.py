@@ -259,7 +259,19 @@ col_left, col_right = st.columns([4, 8])
 
 with col_left:
     st.subheader("1. Dados da Operação")
-    valor_financiado = st.number_input("Valor Solicitado / Financiado (R$):", min_value=0.0, value=0.0, step=50000.0, format="%.2f")
+    valor_financiado = st.number_input(
+        "Valor Solicitado / Financiado (R$): *",
+        min_value=0.0,
+        value=0.0,
+        step=50000.0,
+        format="%.2f",
+        help="Campo obrigatório para cálculo de proporcionalidade de risco (LTV)."
+    )
+    
+    # Alerta visual caso o campo esteja zerado
+    if valor_financiado <= 0.0:
+        st.warning("⚠️ Preenchimento obrigatório: Digite o valor financiado antes de gerar o parecer.")
+
     modalidade = st.selectbox("Modalidade da Operação:", ["Barter (Troca de Insumos por Grãos)", "Dinheiro / Crédito Financeiro"])
     
     # Parâmetros estruturais fixados internamente
@@ -273,7 +285,9 @@ with col_left:
         accept_multiple_files=True
     )
     
-    btn_processar = st.button("Gerar Rating e Diagnóstico Integrado", disabled=(not uploaded_files))
+    # O botão fica desabilitado se não houver PDF ou se o valor financiado for 0.00
+    pode_processar = (len(uploaded_files or []) > 0) and (valor_financiado > 0.0)
+    btn_processar = st.button("Gerar Rating e Diagnóstico Integrado", disabled=(not pode_processar))
 
 # SYSTEM INSTRUCTION
 SYSTEM_INSTRUCTION = """
@@ -328,7 +342,15 @@ REGRA DE FORMATAÇÃO MONETÁRIA:
 with col_right:
     st.subheader("📊 Diagnóstico Integrado de Risco & Decisão de Crédito")
     
-    if btn_processar and uploaded_files:
+    if btn_processar:
+        if valor_financiado <= 0.0:
+            st.error("❌ ERRO DE PREENCHIMENTO: O campo 'Valor Solicitado / Financiado (R$)' é obrigatório e deve ser maior que R$ 0,00.")
+            st.stop()
+            
+        if not uploaded_files:
+            st.error("❌ ERRO DE ENVIO: Anexe pelo menos 1 arquivo PDF para realizar a análise.")
+            st.stop()
+            
         if not api_key:
             st.error("Chave de API não configurada. Verifique as 'Secrets' no painel do Streamlit Cloud.")
         else:
@@ -368,7 +390,6 @@ with col_right:
                         temperature=0.1,
                     )
                     
-                    # MEQUANISMO DE RESILIÊNCIA E FALLBACK AUTOMÁTICO (RETRIES + FALLBACK MODEL)
                     response = None
                     modelos_para_tentar = ["gemini-3.6-flash", "gemini-2.5-flash"]
                     
@@ -391,7 +412,6 @@ with col_right:
                         if response and response.text:
                             break
                     
-                    # LIMPEZA DOS ARQUIVOS TEMPORÁRIOS
                     for arq in arquivos_gemini:
                         try:
                             client.files.delete(name=arq.name)
@@ -434,4 +454,4 @@ with col_right:
                     if os.path.exists(tp):
                         os.remove(tp)
     else:
-        st.info("Aguardando upload de um ou mais arquivos PDF para gerar o parecer de crédito e a matriz de mitigação.")
+        st.info("Aguardando preenchimento dos dados e upload do(s) arquivo(s) PDF para gerar o parecer de crédito.")
